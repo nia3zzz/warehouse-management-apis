@@ -57,7 +57,6 @@ const userSchema = new Schema<IUser>(
     name: {
       type: String,
       required: true,
-      match: /^[a-zA-Z]{2,30}$/,
     },
 
     email: {
@@ -94,7 +93,7 @@ const userSchema = new Schema<IUser>(
     address: {
       type: addressSchema,
       required: function () {
-        return this.role === "admin";
+        return this.role !== "admin";
       },
     },
     role: {
@@ -110,4 +109,4 @@ const userSchema = new Schema<IUser>(
 
 const User: Model<IUser> = mongoose.model("User", userSchema);
 
-export { User };
+export default User;
