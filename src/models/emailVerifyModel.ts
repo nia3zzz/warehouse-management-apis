@@ -30,4 +30,4 @@ const emailVerifyModel: Model<IEmailVerify> = mongoose.model(
   emailVerifySchema
 );
 
-export { emailVerifyModel };
+export default emailVerifyModel ;

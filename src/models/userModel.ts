@@ -8,6 +8,8 @@ interface IUser extends Document {
   profile_Picture: string;
   address: IAddress;
   role: "admin" | "customer" | "supplier";
+  isVerified: boolean;
+  isApproved: boolean;
 }
 
 interface IAddress extends Document {
@@ -96,10 +98,27 @@ const userSchema = new Schema<IUser>(
         return this.role !== "admin";
       },
     },
+
     role: {
       type: String,
       required: true,
       enum: ["admin", "customer", "supplier"],
+    },
+
+    isVerified: {
+      type: Boolean,
+      required: function () {
+        return this.role === "admin";
+      },
+      default: false,
+    },
+
+    isApproved: {
+      type: Boolean,
+      required: function () {
+        return this.role === "admin";
+      },
+      default: false,
     },
   },
   {

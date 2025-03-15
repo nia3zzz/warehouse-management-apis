@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
-import { createAdminZod } from "../DTO/userZodValidator";
+import { createAdminZod, loginAdminZod } from "../DTO/userZodValidator";
 import bcrypt from "bcryptjs";
 import User from "../models/userModel";
 import cloudinary from "../utils/cloudinarySetup";
+import jwt from "jsonwebtoken";
+import sendEmail from "../utils/nodeMailer";
+import process from "process";
 
 interface cloudinaryUploadResponse {
   secure_url: string;
@@ -28,22 +31,24 @@ const createAdmin = async (req: Request, res: Response): Promise<any> => {
     });
   }
 
-//check duplicates
-const duplicateEmail = await User.findOne({ email: validateData.data.email });
-if (duplicateEmail) {
-  return res.status(409).json({
-    status: "error",
-    message: "Email already exists",
-  });
-}
+  //check duplicates
+  const duplicateEmail = await User.findOne({ email: validateData.data.email });
+  if (duplicateEmail) {
+    return res.status(409).json({
+      status: "error",
+      message: "Email already exists",
+    });
+  }
 
-const duplicatePhoneNumber = await User.findOne({ phoneNumber: validateData.data.phoneNumber });
-if (duplicatePhoneNumber) {
-  return res.status(409).json({
-    status: "error",
-    message: "Phone number already exists",
+  const duplicatePhoneNumber = await User.findOne({
+    phoneNumber: validateData.data.phoneNumber,
   });
-}
+  if (duplicatePhoneNumber) {
+    return res.status(409).json({
+      status: "error",
+      message: "Phone number already exists",
+    });
+  }
   //hash password
   const salt: string = await bcrypt.genSalt(10);
   const hashedPassword: string = await bcrypt.hash(password, salt);
@@ -77,4 +82,98 @@ if (duplicatePhoneNumber) {
   }
 };
 
-export { createAdmin };
+const loginAdmin = async (req: Request, res: Response): Promise<any> => {
+  const { email, phoneNumber, password } = req.body;
+
+  //data validation using zod
+  const validateData = loginAdminZod.safeParse({
+    email,
+    phoneNumber,
+    password,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  //check user exists
+  const checkUserExists = await User.findOne({
+    $or: [
+      { email: validateData.data.email },
+      { phoneNumber: validateData.data.phoneNumber },
+    ],
+  });
+
+  if (!checkUserExists) {
+    return res.status(401).json({
+      status: "error",
+      message: "Invalid credentials.",
+    });
+  }
+
+  //authenticate password
+  const authenticatePassword: boolean = await bcrypt.compare(
+    validateData.data.password,
+    checkUserExists.password
+  );
+
+  if (!authenticatePassword) {
+    return res.status(401).json({
+      status: "error",
+      message: "Invalid credentials.",
+    });
+  }
+
+  //check if admin email is verified
+
+  if (!checkUserExists.isVerified) {
+    await sendEmail(
+      { 
+        _id: checkUserExists._id as string,
+         email: checkUserExists.email
+         },
+      "emailVerification"
+    );
+
+    return res.status(401).json({
+      status: "error",
+      message: "Verification code has been sent, check email.",
+    });
+  }
+
+  //check if admin is authenticated
+  if (!checkUserExists.isApproved) {
+    return res.status(401).json({
+      status: "error",
+      message: "You are not authenticated.",
+    });
+  }
+
+  //send cookie
+  const token = jwt.sign(
+    { 
+      id: checkUserExists._id 
+    },
+    process.env.JWT_SECRET as string,
+    {
+      expiresIn: "1d",
+    }
+  );
+
+  res.cookie("token", token, {
+    domain: "localhost",
+    expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    httpOnly: true,
+    secure: true,
+  });
+
+  return res.status(200).json({
+    state: "success",
+    message: "Admin logged in successfully",
+  });
+};
+
+export { createAdmin, loginAdmin };

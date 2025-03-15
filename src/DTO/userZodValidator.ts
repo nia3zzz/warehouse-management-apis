@@ -37,4 +37,14 @@ const createAdminZod = z.object({
   }),
 });
 
-export { createAdminZod };
+const loginAdminZod = z
+  .object({
+    email: z.string({}).optional(),
+    phoneNumber: z.string().optional(),
+    password: z.string().min(6, "Password is required of 6 characters."),
+  })
+  .refine((data) => data.email || data.phoneNumber, {
+    message: "At least one field must be provided.",
+  });
+
+export { createAdminZod, loginAdminZod };
