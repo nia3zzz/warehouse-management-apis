@@ -5,7 +5,7 @@ import User from "../models/userModel";
 import cloudinary from "../utils/cloudinarySetup";
 import jwt from "jsonwebtoken";
 import sendEmail from "../utils/nodeMailer";
-import process from "process";
+import { customExpressRequest } from "../middlewares/authHandler";
 
 interface cloudinaryUploadResponse {
   secure_url: string;
@@ -131,10 +131,10 @@ const loginAdmin = async (req: Request, res: Response): Promise<any> => {
 
   if (!checkUserExists.isVerified) {
     await sendEmail(
-      { 
+      {
         _id: checkUserExists._id as string,
-         email: checkUserExists.email
-         },
+        email: checkUserExists.email,
+      },
       "emailVerification"
     );
 
@@ -151,29 +151,68 @@ const loginAdmin = async (req: Request, res: Response): Promise<any> => {
       message: "You are not authenticated.",
     });
   }
+  try {
+    //send cookie
+    const token = jwt.sign(
+      {
+        id: checkUserExists._id,
+      },
+      process.env.JWT_SECRET as string,
+      {
+        expiresIn: "1d",
+      }
+    );
 
-  //send cookie
-  const token = jwt.sign(
-    { 
-      id: checkUserExists._id 
-    },
-    process.env.JWT_SECRET as string,
-    {
-      expiresIn: "1d",
-    }
-  );
+    res.cookie("token", token, {
+      domain: "localhost",
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      httpOnly: true,
+      secure: true,
+    });
 
-  res.cookie("token", token, {
-    domain: "localhost",
-    expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    httpOnly: true,
-    secure: true,
-  });
-
-  return res.status(200).json({
-    state: "success",
-    message: "Admin logged in successfully",
-  });
+    return res.status(200).json({
+      state: "success",
+      message: "Admin logged in successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+    });
+  }
 };
 
-export { createAdmin, loginAdmin };
+const getRequestsAdmin = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  try {
+    const adminRequests = await User.find({
+      $and: [
+        {
+          role: "admin",
+        },
+        {
+          isVerified: true,
+        },
+        {
+          isApproved: false,
+        },
+      ],
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: `New ${adminRequests.length} admin requests found`,
+      data: adminRequests,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+    });
+  }
+};
+
+export { createAdmin, loginAdmin, getRequestsAdmin };

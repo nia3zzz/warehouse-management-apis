@@ -3,6 +3,7 @@ import "dotenv/config";
 import { DBConn } from "./utils/DBConn";
 import userRoutes from "./routes/userRoutes";
 import cookieParser from "cookie-parser";
+import errorHandler from "./middlewares/errorHandler";
 
 const app: express.Application = express();
 const port: number = Number(process.env.PORT) || 3000;
@@ -15,6 +16,12 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use("/user", userRoutes);
+
+app.use("*", (req: Request, res: Response) => {
+  res.status(404).send("Page not found");
+});
+
+app.use(errorHandler)
 
 app.listen(port, async () => {
   await DBConn();
