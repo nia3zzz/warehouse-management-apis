@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
-import { createAdminZod, loginAdminZod } from "../DTO/userZodValidator";
+import {
+  approveAdminZod,
+  createAdminZod,
+  loginAdminZod,
+} from "../DTO/userZodValidator";
 import bcrypt from "bcryptjs";
 import User from "../models/userModel";
 import cloudinary from "../utils/cloudinarySetup";
@@ -30,30 +34,31 @@ const createAdmin = async (req: Request, res: Response): Promise<any> => {
       message: validateData.error.errors[0].message,
     });
   }
-
-  //check duplicates
-  const duplicateEmail = await User.findOne({ email: validateData.data.email });
-  if (duplicateEmail) {
-    return res.status(409).json({
-      status: "error",
-      message: "Email already exists",
-    });
-  }
-
-  const duplicatePhoneNumber = await User.findOne({
-    phoneNumber: validateData.data.phoneNumber,
-  });
-  if (duplicatePhoneNumber) {
-    return res.status(409).json({
-      status: "error",
-      message: "Phone number already exists",
-    });
-  }
-  //hash password
-  const salt: string = await bcrypt.genSalt(10);
-  const hashedPassword: string = await bcrypt.hash(password, salt);
-
   try {
+    //check duplicates
+    const duplicateEmail = await User.findOne({
+      email: validateData.data.email,
+    });
+    if (duplicateEmail) {
+      return res.status(409).json({
+        status: "error",
+        message: "Email already exists",
+      });
+    }
+
+    const duplicatePhoneNumber = await User.findOne({
+      phoneNumber: validateData.data.phoneNumber,
+    });
+    if (duplicatePhoneNumber) {
+      return res.status(409).json({
+        status: "error",
+        message: "Phone number already exists",
+      });
+    }
+    //hash password
+    const salt: string = await bcrypt.genSalt(10);
+    const hashedPassword: string = await bcrypt.hash(password, salt);
+
     //upload picture to cloudinary
     const profile_PictureURL: cloudinaryUploadResponse =
       await cloudinary.uploader.upload(validateData.data.profile_Picture.path, {
@@ -98,60 +103,59 @@ const loginAdmin = async (req: Request, res: Response): Promise<any> => {
       message: validateData.error.errors[0].message,
     });
   }
-
-  //check user exists
-  const checkUserExists = await User.findOne({
-    $or: [
-      { email: validateData.data.email },
-      { phoneNumber: validateData.data.phoneNumber },
-    ],
-  });
-
-  if (!checkUserExists) {
-    return res.status(401).json({
-      status: "error",
-      message: "Invalid credentials.",
+  try {
+    //check user exists
+    const checkUserExists = await User.findOne({
+      $or: [
+        { email: validateData.data.email },
+        { phoneNumber: validateData.data.phoneNumber },
+      ],
     });
-  }
 
-  //authenticate password
-  const authenticatePassword: boolean = await bcrypt.compare(
-    validateData.data.password,
-    checkUserExists.password
-  );
+    if (!checkUserExists) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid credentials.",
+      });
+    }
 
-  if (!authenticatePassword) {
-    return res.status(401).json({
-      status: "error",
-      message: "Invalid credentials.",
-    });
-  }
-
-  //check if admin email is verified
-
-  if (!checkUserExists.isVerified) {
-    await sendEmail(
-      {
-        _id: checkUserExists._id as string,
-        email: checkUserExists.email,
-      },
-      "emailVerification"
+    //authenticate password
+    const authenticatePassword: boolean = await bcrypt.compare(
+      validateData.data.password,
+      checkUserExists.password
     );
 
-    return res.status(401).json({
-      status: "error",
-      message: "Verification code has been sent, check email.",
-    });
-  }
+    if (!authenticatePassword) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid credentials.",
+      });
+    }
 
-  //check if admin is authenticated
-  if (!checkUserExists.isApproved) {
-    return res.status(401).json({
-      status: "error",
-      message: "You are not authenticated.",
-    });
-  }
-  try {
+    //check if admin email is verified
+
+    if (!checkUserExists.isVerified) {
+      await sendEmail(
+        {
+          _id: checkUserExists._id as string,
+          email: checkUserExists.email,
+        },
+        "emailVerification"
+      );
+
+      return res.status(401).json({
+        status: "error",
+        message: "Verification code has been sent, check email.",
+      });
+    }
+
+    //check if admin is authenticated
+    if (!checkUserExists.isApproved) {
+      return res.status(401).json({
+        status: "error",
+        message: "You are not authenticated.",
+      });
+    }
     //send cookie
     const token = jwt.sign(
       {
@@ -175,7 +179,6 @@ const loginAdmin = async (req: Request, res: Response): Promise<any> => {
       message: "Admin logged in successfully",
     });
   } catch (error) {
-    console.error(error);
     return res.status(500).json({
       status: "error",
       message: "Internal server error",
@@ -215,4 +218,64 @@ const getRequestsAdmin = async (
   }
 };
 
-export { createAdmin, loginAdmin, getRequestsAdmin };
+const approveRemoveAdmin = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  const id = req.params.id;
+  const { approve } = req.body;
+  const validateData = approveAdminZod.safeParse({
+    id,
+    approve,
+  });
+
+  //validate data
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    //if user exist & auth checks
+    const foundAdmin = await User.findById({ _id: validateData.data.id });
+    if (!foundAdmin) {
+      return res.status(404).json({
+        status: "error",
+        message: "Admin not found",
+      });
+    }
+    if (!foundAdmin.isVerified && foundAdmin.role !== "admin") {
+      return res.status(404).json({
+        status: "error",
+        message: "Admin not found",
+      });
+    }
+
+    //update and send email
+    if (!foundAdmin.isApproved) {
+      await User.findByIdAndUpdate(id, {
+        isApproved: true,
+      });
+
+      await sendEmail({ email: foundAdmin.email }, "appovedNotification");
+
+      return res.status(200).json({
+        state: "success",
+        message: "New admin has been added.",
+      });
+    } else if (foundAdmin.isApproved) {
+      await User.findByIdAndDelete(id);
+
+      await sendEmail({ email: foundAdmin.email }, "deleteAccount");
+    }
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+    });
+  }
+};
+
+export { createAdmin, loginAdmin, getRequestsAdmin, approveRemoveAdmin };

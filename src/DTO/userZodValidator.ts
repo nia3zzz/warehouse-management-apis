@@ -47,4 +47,12 @@ const loginAdminZod = z
     message: "At least one field must be provided.",
   });
 
-export { createAdminZod, loginAdminZod };
+const approveAdminZod = z.object({
+  id: z
+    .string({ message: "Must be a valid id." })
+    .min(24, "Invalid id provided.")
+    .max(24, "Invalid id provided."),
+  approve: z.boolean({ message: "Must be valid type." }),
+});
+
+export { createAdminZod, loginAdminZod, approveAdminZod };
