@@ -1,5 +1,5 @@
 import express, { Router } from "express";
-import { createAdmin, loginAdmin, getRequestsAdmin, approveRemoveAdmin } from "../controllers/userControllers";
+import { createAdmin, loginAdmin, getRequestsAdmin, approveRemoveAdmin, verifyAdminEmail } from "../controllers/userControllers";
 import upload from "../utils/multerSetup";
 import authHandler from "../middlewares/authHandler";
 
@@ -15,5 +15,7 @@ router.post("/admin/login", loginAdmin);
 router.get("/admin/requests",authHandler ,getRequestsAdmin)
 //approve or remove an admin route
 router.put("/admin/requests/:id",authHandler, approveRemoveAdmin)
+//verify email of admin
+router.post("/admin/verifyemail/:id",authHandler, verifyAdminEmail)
 
 export default router ;

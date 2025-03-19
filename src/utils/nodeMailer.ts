@@ -1,10 +1,15 @@
 import nodemailer from "nodemailer";
 import emailVerifyModel from "../models/emailVerifyModel";
 import bcrypt from "bcryptjs";
+import { Document } from "mongoose";
 
 interface IUser {
   _id?: string;
   email: string;
+}
+
+interface IEmailVerifyDocument extends Document {
+  _id: string;
 }
 
 type IActions =
@@ -27,6 +32,7 @@ const sendEmail = async (foundUser: IUser, action: IActions) => {
     let subject = "";
     let message = "";
     let randomGeneratedCode: number | null = null;
+    let verifyEmailDocument: IEmailVerifyDocument | null = null;
 
     if (action === "emailVerification" || action === "changePassword") {
       // generate a random 6-digit code
@@ -38,10 +44,10 @@ const sendEmail = async (foundUser: IUser, action: IActions) => {
       );
 
       // save hashed code to database
-      await emailVerifyModel.create({
+      verifyEmailDocument = (await emailVerifyModel.create({
         author: foundUser._id,
         hashedCode,
-      });
+      })) as IEmailVerifyDocument;
     }
 
     if (action === "emailVerification") {
@@ -67,6 +73,7 @@ const sendEmail = async (foundUser: IUser, action: IActions) => {
     });
 
     console.log("New email sent, id: ", sentMail.response);
+    return verifyEmailDocument?._id as string | null;
   } catch (error) {
     console.error("Error sending email:", error);
     throw new Error("Failed to send email.");

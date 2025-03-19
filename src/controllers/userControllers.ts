@@ -3,6 +3,7 @@ import {
   approveAdminZod,
   createAdminZod,
   loginAdminZod,
+  verifyAdminEmailZod,
 } from "../DTO/userZodValidator";
 import bcrypt from "bcryptjs";
 import User from "../models/userModel";
@@ -10,6 +11,7 @@ import cloudinary from "../utils/cloudinarySetup";
 import jwt from "jsonwebtoken";
 import sendEmail from "../utils/nodeMailer";
 import { customExpressRequest } from "../middlewares/authHandler";
+import emailVerifyModel from "../models/emailVerifyModel";
 
 interface cloudinaryUploadResponse {
   secure_url: string;
@@ -135,7 +137,7 @@ const loginAdmin = async (req: Request, res: Response): Promise<any> => {
     //check if admin email is verified
 
     if (!checkUserExists.isVerified) {
-      await sendEmail(
+      const secureId = await sendEmail(
         {
           _id: checkUserExists._id as string,
           email: checkUserExists.email,
@@ -144,8 +146,9 @@ const loginAdmin = async (req: Request, res: Response): Promise<any> => {
       );
 
       return res.status(401).json({
-        status: "error",
+        status: "success",
         message: "Verification code has been sent, check email.",
+        secureId: secureId ?? "",
       });
     }
 
@@ -278,4 +281,70 @@ const approveRemoveAdmin = async (
   }
 };
 
-export { createAdmin, loginAdmin, getRequestsAdmin, approveRemoveAdmin };
+const verifyAdminEmail = async (req: Request, res: Response): Promise<any> => {
+  const id = req.params.id;
+  const { verificationCode } = req.body;
+
+  //type validation
+  const validateData = verifyAdminEmailZod.safeParse({
+    id,
+    verificationCode,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    //check code exists
+    const hashCodeDocument = await emailVerifyModel.findById({
+      _id: id,
+    });
+
+    if (!hashCodeDocument) {
+      return res.status(404).json({
+        status: "error",
+        message: "Session is invalid or expired.",
+      });
+    }
+
+    //validate against hashed code
+    const isCodeValid: boolean = await bcrypt.compare(
+      validateData.data.verificationCode,
+      hashCodeDocument.hashedCode
+    );
+
+    if (!isCodeValid) {
+      return res.status(401).json({
+        status: "error",
+        message: "Verification code is incorrect.",
+      });
+    }
+
+    //update user as the user email is verified
+    await User.findByIdAndUpdate(hashCodeDocument.author, {
+      isVerified: true,
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Your email has been verified.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export {
+  createAdmin,
+  loginAdmin,
+  getRequestsAdmin,
+  approveRemoveAdmin,
+  verifyAdminEmail,
+};
