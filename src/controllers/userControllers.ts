@@ -341,10 +341,26 @@ const verifyAdminEmail = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+const logoutAdmin = async (req: Request, res: Response): Promise<any> => {
+  try {
+    res.clearCookie("token");
+    return res.status(200).json({
+      status: "success",
+      message: "You are logged out.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
 export {
   createAdmin,
   loginAdmin,
   getRequestsAdmin,
   approveRemoveAdmin,
   verifyAdminEmail,
+  logoutAdmin
 };
