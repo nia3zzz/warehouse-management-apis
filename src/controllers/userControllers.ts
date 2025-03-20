@@ -12,6 +12,7 @@ import jwt from "jsonwebtoken";
 import sendEmail from "../utils/nodeMailer";
 import { customExpressRequest } from "../middlewares/authHandler";
 import emailVerifyModel from "../models/emailVerifyModel";
+import logger from "../utils/logger";
 
 interface cloudinaryUploadResponse {
   secure_url: string;
@@ -139,7 +140,7 @@ const loginAdmin = async (req: Request, res: Response): Promise<any> => {
     if (!checkUserExists.isVerified) {
       const secureId = await sendEmail(
         {
-          _id: checkUserExists._id as string,
+          _id: checkUserExists._id.toString(),
           email: checkUserExists.email,
         },
         "emailVerification"
@@ -176,6 +177,12 @@ const loginAdmin = async (req: Request, res: Response): Promise<any> => {
       httpOnly: true,
       secure: true,
     });
+
+    await logger(
+      checkUserExists._id.toString(),
+      "loginAdmin",
+      `An Admin of id ${checkUserExists._id} has logged in.`
+    );
 
     return res.status(200).json({
       state: "success",
@@ -222,7 +229,7 @@ const getRequestsAdmin = async (
 };
 
 const approveRemoveAdmin = async (
-  req: Request,
+  req: customExpressRequest,
   res: Response
 ): Promise<any> => {
   const id = req.params.id;
@@ -264,6 +271,14 @@ const approveRemoveAdmin = async (
 
       await sendEmail({ email: foundAdmin.email }, "appovedNotification");
 
+      await logger(
+        req.userId ?? "",
+        "newAdminAdded",
+        `An Admin of id ${req.userId ?? ""} has approved a new admin of id ${
+          foundAdmin._id
+        }.`
+      );
+
       return res.status(200).json({
         state: "success",
         message: "New admin has been added.",
@@ -272,6 +287,19 @@ const approveRemoveAdmin = async (
       await User.findByIdAndDelete(id);
 
       await sendEmail({ email: foundAdmin.email }, "deleteAccount");
+
+      await logger(
+        req.userId ?? "",
+        "removeAdmin",
+        `An Admin of id ${req.userId ?? ""} has removed an admin of id ${
+          foundAdmin._id
+        }.`
+      );
+
+      return res.status(200).json({
+        status: "success",
+        message: "Admin has been removed.",
+      });
     }
   } catch (error) {
     return res.status(500).json({
@@ -341,9 +369,16 @@ const verifyAdminEmail = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-const logoutAdmin = async (req: Request, res: Response): Promise<any> => {
+const logoutAdmin = async (req: customExpressRequest, res: Response): Promise<any> => {
   try {
     res.clearCookie("token");
+
+    await logger(
+      req.userId ?? "",
+      "logoutAdmin",
+      `An Admin of id ${req.userId ?? ""} has logged out.`
+    );
+
     return res.status(200).json({
       status: "success",
       message: "You are logged out.",
@@ -362,5 +397,5 @@ export {
   getRequestsAdmin,
   approveRemoveAdmin,
   verifyAdminEmail,
-  logoutAdmin
+  logoutAdmin,
 };
