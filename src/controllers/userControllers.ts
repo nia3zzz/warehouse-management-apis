@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import {
   approveAdminZod,
+  changePasswordZod,
   createAdminZod,
   loginAdminZod,
   verifyAdminEmailZod,
@@ -369,7 +370,10 @@ const verifyAdminEmail = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-const logoutAdmin = async (req: customExpressRequest, res: Response): Promise<any> => {
+const logoutAdmin = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
   try {
     res.clearCookie("token");
 
@@ -391,6 +395,110 @@ const logoutAdmin = async (req: customExpressRequest, res: Response): Promise<an
   }
 };
 
+const requestChangePassword = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  try {
+    //send code to email
+    const foundUser = await User.findById(req.userId);
+
+    if (!foundUser) {
+      return res.status(409).json({
+        status: "error",
+        message: "Something went wrong.",
+      });
+    }
+
+    await sendEmail(
+      { _id: foundUser._id.toString(), email: foundUser.email },
+      "changePassword"
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Code has been sent to your email.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+const changePassword = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  const { verificationCode, newPassword, confirmPassword } = req.body;
+
+  //req data validation
+  const validateData = changePasswordZod.safeParse({
+    verificationCode,
+    newPassword,
+    confirmPassword,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  //verify hash code is authentic
+  try {
+    const emailVerificationDocument = await emailVerifyModel.findOne({
+      author: req.userId,
+    });
+
+    if (!emailVerificationDocument) {
+      return res.status(404).json({
+        status: "error",
+        message: "Code has expired or is invalid.",
+      });
+    }
+
+    const isCodeValid = await bcrypt.compare(
+      validateData.data.verificationCode,
+      emailVerificationDocument.hashedCode
+    );
+
+    if (!isCodeValid) {
+      return res.status(409).json({
+        status: "error",
+        message: "Code has expired or is invalid.",
+      });
+    }
+
+    //update the user password
+    const salt = await bcrypt.genSalt(10);
+    const newPassword = await bcrypt.hash(validateData.data.newPassword, salt);
+
+    if (req.userId) {
+      await User.findOneAndUpdate(
+        { _id: req.userId },
+        { password: newPassword }
+      );
+    } else {
+      return res.status(409).json({
+        status: "error",
+        message: "Something went wrong.",
+      });
+    }
+
+    return res.status(200).json({
+      status: "sucess",
+      message: "Your password has been updated.",
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ status: "error", message: "Internal Server Error" });
+  }
+};
+
 export {
   createAdmin,
   loginAdmin,
@@ -398,4 +506,6 @@ export {
   approveRemoveAdmin,
   verifyAdminEmail,
   logoutAdmin,
+  requestChangePassword,
+  changePassword,
 };

@@ -60,10 +60,34 @@ const verifyAdminEmailZod = z.object({
     .string({ message: "Must be a valid id." })
     .min(24, "Invalid id provided.")
     .max(24, "Invalid id provided."),
-    verificationCode: z
+  verificationCode: z
     .string({ message: "Must be valid type." })
     .min(6, "Invalid verification code provided.")
     .max(6, "Invalid verification code provided."),
 });
 
-export { createAdminZod, loginAdminZod, approveAdminZod, verifyAdminEmailZod };
+const changePasswordZod = z
+  .object({
+    verificationCode: z
+      .string({ message: "Verification code is required." })
+      .min(6, "Invalid verification code.")
+      .max(6, "Invalid verification code."),
+    newPassword: z
+      .string({ message: "New password is required." })
+      .min(6, "New password is invalid."),
+    confirmPassword: z
+      .string({ message: "Confirm password is required." })
+      .min(6, "Confirm password is invalid."),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
+export {
+  createAdminZod,
+  loginAdminZod,
+  approveAdminZod,
+  verifyAdminEmailZod,
+  changePasswordZod,
+};

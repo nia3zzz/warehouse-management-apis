@@ -6,6 +6,8 @@ import {
   approveRemoveAdmin,
   verifyAdminEmail,
   logoutAdmin,
+  requestChangePassword,
+  changePassword,
 } from "../controllers/userControllers";
 import upload from "../utils/multerSetup";
 import authHandler from "../middlewares/authHandler";
@@ -26,5 +28,9 @@ router.put("/admin/requests/:id", authHandler, approveRemoveAdmin);
 router.post("/admin/verifyemail/:id", authHandler, verifyAdminEmail);
 //logout admin
 router.post("/admin/logout", authHandler, logoutAdmin);
+//request password change of admin
+router.put("/admin/requestchangepassword", authHandler, requestChangePassword);
+//change password of admin with code
+router.put("/admin/changepassword", authHandler, changePassword);
 
 export default router;
