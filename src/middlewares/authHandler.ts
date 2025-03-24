@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
+import User from "../models/userModel";
 
 export interface customExpressRequest extends Request {
   userId?: string;
@@ -31,7 +32,17 @@ const authHandler = async (
     ) as decodedTokenResult;
 
     req.userId = decodedToken.id;
-    return next();
+
+    const foundUser = await User.findById(req.userId);
+
+    if (!foundUser) {
+      res.status(401).json({
+        status: "error",
+        message: "Unauthorized",
+      });
+    }
+
+    next();
   } catch (error) {
     res.status(401).json({
       status: "error",

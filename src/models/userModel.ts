@@ -67,7 +67,6 @@ const userSchema = new Schema<IUser>(
       required: function () {
         return this.role === "admin";
       },
-      unique: true,
       match: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
     },
 

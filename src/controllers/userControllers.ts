@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import {
+  addSupplyerZod,
   approveAdminZod,
   changePasswordZod,
   createAdminZod,
@@ -19,6 +20,7 @@ interface cloudinaryUploadResponse {
   secure_url: string;
 }
 
+//admin controller functions
 const createAdmin = async (req: Request, res: Response): Promise<any> => {
   const { name, email, phoneNumber, password } = req.body;
   const profile_Picture = req.file;
@@ -499,6 +501,103 @@ const changePassword = async (
   }
 };
 
+//supplier controller functions
+const addSupplyer = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  //req data validation
+  const { name, phoneNumber, house, street, city, state, postCode, country } =
+    req.body;
+
+  const validateData = addSupplyerZod.safeParse({
+    name,
+    phoneNumber,
+    house,
+    street,
+    city,
+    state,
+    postCode,
+    country,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    //check duplicate supplyer
+    const checkDuplicateSupplier = await User.findOne({
+      phoneNumber: validateData.data.phoneNumber,
+    });
+
+    if (checkDuplicateSupplier) {
+      return res.status(409).json({
+        status: "error",
+        message: "This phone number is already in use.",
+      });
+    }
+
+    //save the supplyer
+    const supplyer = await User.create({
+      name: validateData.data.name,
+      phoneNumber: validateData.data.phoneNumber,
+      address: {
+        house: validateData.data.house,
+        street: validateData.data.street,
+        city: validateData.data.city,
+        state: validateData.data.state,
+        postCode: validateData.data.postCode,
+        country: validateData.data.country,
+      },
+      role: "supplier",
+    });
+
+    await logger(
+      req.userId ?? "",
+      "addSupplyer",
+      `An admin of id ${req.userId} has added an supplyer of id ${supplyer._id}`
+    );
+
+    return res.status(201).json({
+      status: "success",
+      message: "Supplyer has been added.",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+const getSupplyers = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { skip, limit } = req.query;
+
+    const supplyers = await User.find({
+      role: "supplier",
+    })
+      .skip(Number(skip) || 0)
+      .limit(Number(limit) || 0);
+
+    return res.status(200).json({
+      status: "error",
+      message: `Total ${supplyers.length} supplyers found.`,
+      data: supplyers,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
 export {
   createAdmin,
   loginAdmin,
@@ -508,4 +607,6 @@ export {
   logoutAdmin,
   requestChangePassword,
   changePassword,
+  addSupplyer,
+  getSupplyers,
 };

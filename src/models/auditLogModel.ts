@@ -5,6 +5,7 @@ type IAction =
   | "loginAdmin"
   | "logoutAdmin"
   | "removeAdmin"
+  | "addSupplyer"
   | "addProducts"
   | "removeProducts";
 
@@ -32,6 +33,7 @@ const auditLogSchema = new Schema<IAuditLog>(
         "loginAdmin",
         "logoutAdmin",
         "removeAdmin",
+        "addSupplyer",
         "addProducts",
         "removeProducts",
       ],
