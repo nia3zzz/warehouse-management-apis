@@ -4,7 +4,9 @@ import {
   approveAdminZod,
   changePasswordZod,
   createAdminZod,
+  deleteSupplyerZod,
   loginAdminZod,
+  updateSupplyerZod,
   verifyAdminEmailZod,
 } from "../DTO/userZodValidator";
 import bcrypt from "bcryptjs";
@@ -221,7 +223,13 @@ const getRequestsAdmin = async (
     return res.status(200).json({
       status: "success",
       message: `New ${adminRequests.length} admin requests found`,
-      data: adminRequests,
+      data: adminRequests.map((user) => ({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        profile_Picture: user.profile_Picture,
+      })),
     });
   } catch (error) {
     return res.status(500).json({
@@ -586,9 +594,156 @@ const getSupplyers = async (req: Request, res: Response): Promise<any> => {
       .limit(Number(limit) || 0);
 
     return res.status(200).json({
-      status: "error",
+      status: "success",
       message: `Total ${supplyers.length} supplyers found.`,
-      data: supplyers,
+      data: supplyers.map((supplyer) => ({
+        _id: supplyer._id,
+        name: supplyer.name,
+        phoneNumber: supplyer.phoneNumber,
+        profile_Picture: supplyer.profile_Picture,
+        address:supplyer.address
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+const updateSupplyer = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  //req data validation
+  const { supplyerId } = req.params;
+  const { name, phoneNumber, house, street, city, state, postCode, country } =
+    req.body;
+
+  const validateData = updateSupplyerZod.safeParse({
+    supplyerId,
+    name,
+    phoneNumber,
+    house,
+    street,
+    city,
+    state,
+    postCode,
+    country,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+  try {
+    //check if the supplyer exists
+    const foundSupplyer = await User.findById(validateData.data.supplyerId);
+
+    if (!foundSupplyer || foundSupplyer.role !== "supplier") {
+      return res.status(404).json({
+        status: "error",
+        message: "Supppler was not found.",
+      });
+    }
+
+    //check for changes
+    if (
+      foundSupplyer.name === validateData.data.name &&
+      foundSupplyer.phoneNumber === Number(validateData.data.phoneNumber) &&
+      foundSupplyer.address.house === validateData.data.house &&
+      foundSupplyer.address.street === validateData.data.street &&
+      foundSupplyer.address.city === validateData.data.city &&
+      foundSupplyer.address.state === validateData.data.state &&
+      foundSupplyer.address.postCode === Number(validateData.data.postCode) &&
+      foundSupplyer.address.country === validateData.data.country
+    ) {
+      return res.status(409).json({
+        status: "success",
+        message: "No changes found to update.",
+      });
+    }
+
+    //update the supplyer
+    const updatedSupplyer = await User.findByIdAndUpdate(
+      validateData.data.supplyerId,
+      {
+        name: validateData.data.name,
+        phoneNumber: validateData.data.phoneNumber,
+        address: {
+          house: validateData.data.house,
+          street: validateData.data.street,
+          city: validateData.data.city,
+          state: validateData.data.state,
+          postCode: Number(validateData.data.postCode),
+          country: validateData.data.country,
+        },
+      }
+    );
+
+    await logger(
+      req.userId ?? "",
+      "updateSupplyer",
+      `An admin of id ${req.userId} has updated a supplyer of id ${updatedSupplyer?._id}`
+    );
+
+    return res.status(200).json({
+      status: "error",
+      message: "Supplyer has been updated.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+const deleteSupplyer = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  //data validation
+  const { supplyerId } = req.params;
+
+  const validateData = deleteSupplyerZod.safeParse({
+    supplyerId,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    //check supplyer exists
+    const foundSupplyer = await User.findById(validateData.data.supplyerId);
+
+    if (!foundSupplyer) {
+      return res.status(404).json({
+        status: "error",
+        message: "No supplyer found with the provided id",
+      });
+    }
+
+    //delete supplyer
+
+    await User.findByIdAndDelete(validateData.data.supplyerId);
+
+    await logger(
+      req.userId ?? "",
+      "deleteSupplyer",
+      `An admin of id ${req.userId} has deleted a supplyer of id ${supplyerId}`
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Supplyer has been deleted.",
     });
   } catch (error) {
     return res.status(500).json({
@@ -609,4 +764,6 @@ export {
   changePassword,
   addSupplyer,
   getSupplyers,
+  updateSupplyer,
+  deleteSupplyer,
 };

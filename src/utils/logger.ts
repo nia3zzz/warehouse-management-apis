@@ -6,6 +6,8 @@ type IAction =
   | "logoutAdmin"
   | "removeAdmin"
   | "addSupplyer"
+  | "updateSupplyer"
+  | "deleteSupplyer"
   | "addProducts"
   | "removeProducts";
 
