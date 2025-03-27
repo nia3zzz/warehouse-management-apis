@@ -5,20 +5,16 @@ const createAdminZod = z.object({
     .string({ message: "Invalid name." })
     .min(2, { message: "Invalid name." })
     .max(30, { message: "Invalid name." }),
-
   email: z
     .string({ message: "Invalid email." })
     .email({ message: "Invalid email." }),
-
   phoneNumber: z
     .string({ message: "Invalid phone number." })
     .min(11, { message: "Invalid phone number." })
     .max(11, { message: "Invalid phone number." }),
-
   password: z
     .string({ message: "Invalid password." })
     .min(6, { message: "Password must be at least 6 characters long." }),
-
   profile_Picture: z.object({
     fieldname: z.string().min(1, "Fieldname is required."),
     originalname: z.string().min(1, "Original name is required."),
@@ -84,7 +80,7 @@ const changePasswordZod = z
     path: ["confirmPassword"],
   });
 
-const addSupplyerZod = z.object({
+const addSupplierZod = z.object({
   name: z
     .string({ message: "Invalid name." })
     .min(2, { message: "Invalid name." })
@@ -115,8 +111,8 @@ const addSupplyerZod = z.object({
     .min(1, { message: "Invalid country." }),
 });
 
-const updateSupplyerZod = z.object({
-  supplyerId: z
+const updateSupplierZod = z.object({
+  supplierId: z
     .string({ message: "Must be a valid id." })
     .min(24, "Invalid id provided.")
     .max(24, "Invalid id provided."),
@@ -150,8 +146,8 @@ const updateSupplyerZod = z.object({
     .min(1, { message: "Invalid country." }),
 });
 
-const deleteSupplyerZod = z.object({
-  supplyerId: z
+const deleteSupplierZod = z.object({
+  supplierId: z
     .string({ message: "Must be a valid id." })
     .min(24, "Invalid id provided.")
     .max(24, "Invalid id provided."),
@@ -163,7 +159,7 @@ export {
   approveAdminZod,
   verifyAdminEmailZod,
   changePasswordZod,
-  addSupplyerZod,
-  updateSupplyerZod,
-  deleteSupplyerZod,
+  addSupplierZod,
+  updateSupplierZod,
+  deleteSupplierZod,
 };

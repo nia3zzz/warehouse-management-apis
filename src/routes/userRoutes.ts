@@ -8,10 +8,10 @@ import {
   logoutAdmin,
   requestChangePassword,
   changePassword,
-  addSupplyer,
-  getSupplyers,
-  updateSupplyer,
-  deleteSupplyer,
+  addSupplier,
+  getSuppliers,
+  updateSupplier,
+  deleteSupplier,
 } from "../controllers/userControllers";
 import upload from "../utils/multerSetup";
 import authHandler from "../middlewares/authHandler";
@@ -37,15 +37,15 @@ router.put("/admin/requestchangepassword", authHandler, requestChangePassword);
 //change password of admin with code
 router.put("/admin/changepassword", authHandler, changePassword);
 
-//supplyer routes
+//supplier routes
 
-//add an supplyer
-router.post("/supplyer", authHandler, addSupplyer);
-//get an array of supplyers
-router.get("/supplyer", authHandler, getSupplyers);
-//update a supplyer
-router.put("/supplyer/:supplyerId", authHandler, updateSupplyer);
-//delee a supplyer
-router.delete("/supplyer/:supplyerId", authHandler, deleteSupplyer);
+//add an supplier
+router.post("/supplier", authHandler, addSupplier);
+//get an array of suppliers
+router.get("/supplier", authHandler, getSuppliers);
+//update a supplier
+router.put("/supplier/:supplierId", authHandler, updateSupplier);
+//delee a supplier
+router.delete("/supplier/:supplierId", authHandler, deleteSupplier);
 
 export default router;

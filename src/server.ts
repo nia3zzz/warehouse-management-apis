@@ -4,6 +4,8 @@ import { DBConn } from "./utils/DBConn";
 import userRoutes from "./routes/userRoutes";
 import cookieParser from "cookie-parser";
 import errorHandler from "./middlewares/errorHandler";
+import categoryRoutes from "./routes/categoryRoutes";
+import productRoutes from "./routes/productRoutes";
 
 const app: express.Application = express();
 const port: number = Number(process.env.PORT) || 3000;
@@ -16,12 +18,14 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use("/user", userRoutes);
+app.use("/category", categoryRoutes);
+app.use("/product", productRoutes);
 
 app.use("*", (req: Request, res: Response) => {
   res.status(404).send("Page not found");
 });
 
-app.use(errorHandler)
+app.use(errorHandler);
 
 app.listen(port, async () => {
   await DBConn();

@@ -5,9 +5,10 @@ type IAction =
   | "loginAdmin"
   | "logoutAdmin"
   | "removeAdmin"
-  | "addSupplyer"
-  | "updateSupplyer"
-  | "deleteSupplyer"
+  | "addSupplier"
+  | "updateSupplier"
+  | "deleteSupplier"
+  | "createCategory"
   | "addProducts"
   | "removeProducts";
 

@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import {
-  addSupplyerZod,
+  addSupplierZod,
   approveAdminZod,
   changePasswordZod,
   createAdminZod,
-  deleteSupplyerZod,
+  deleteSupplierZod,
   loginAdminZod,
-  updateSupplyerZod,
+  updateSupplierZod,
   verifyAdminEmailZod,
 } from "../DTO/userZodValidator";
 import bcrypt from "bcryptjs";
@@ -510,7 +510,7 @@ const changePassword = async (
 };
 
 //supplier controller functions
-const addSupplyer = async (
+const addSupplier = async (
   req: customExpressRequest,
   res: Response
 ): Promise<any> => {
@@ -518,7 +518,7 @@ const addSupplyer = async (
   const { name, phoneNumber, house, street, city, state, postCode, country } =
     req.body;
 
-  const validateData = addSupplyerZod.safeParse({
+  const validateData = addSupplierZod.safeParse({
     name,
     phoneNumber,
     house,
@@ -537,7 +537,7 @@ const addSupplyer = async (
   }
 
   try {
-    //check duplicate supplyer
+    //check duplicate supplier
     const checkDuplicateSupplier = await User.findOne({
       phoneNumber: validateData.data.phoneNumber,
     });
@@ -549,8 +549,8 @@ const addSupplyer = async (
       });
     }
 
-    //save the supplyer
-    const supplyer = await User.create({
+    //save the supplier
+    const supplier = await User.create({
       name: validateData.data.name,
       phoneNumber: validateData.data.phoneNumber,
       address: {
@@ -566,13 +566,13 @@ const addSupplyer = async (
 
     await logger(
       req.userId ?? "",
-      "addSupplyer",
-      `An admin of id ${req.userId} has added an supplyer of id ${supplyer._id}`
+      "addSupplier",
+      `An admin of id ${req.userId} has added an supplier of id ${supplier._id}`
     );
 
     return res.status(201).json({
       status: "success",
-      message: "Supplyer has been added.",
+      message: "Supplier has been added.",
     });
   } catch (error) {
     console.log(error);
@@ -583,11 +583,11 @@ const addSupplyer = async (
   }
 };
 
-const getSupplyers = async (req: Request, res: Response): Promise<any> => {
+const getSuppliers = async (req: Request, res: Response): Promise<any> => {
   try {
     const { skip, limit } = req.query;
 
-    const supplyers = await User.find({
+    const suppliers = await User.find({
       role: "supplier",
     })
       .skip(Number(skip) || 0)
@@ -595,13 +595,13 @@ const getSupplyers = async (req: Request, res: Response): Promise<any> => {
 
     return res.status(200).json({
       status: "success",
-      message: `Total ${supplyers.length} supplyers found.`,
-      data: supplyers.map((supplyer) => ({
-        _id: supplyer._id,
-        name: supplyer.name,
-        phoneNumber: supplyer.phoneNumber,
-        profile_Picture: supplyer.profile_Picture,
-        address:supplyer.address
+      message: `Total ${suppliers.length} suppliers found.`,
+      data: suppliers.map((supplier) => ({
+        _id: supplier._id,
+        name: supplier.name,
+        phoneNumber: supplier.phoneNumber,
+        profile_Picture: supplier.profile_Picture,
+        address:supplier.address
       })),
     });
   } catch (error) {
@@ -612,17 +612,17 @@ const getSupplyers = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-const updateSupplyer = async (
+const updateSupplier = async (
   req: customExpressRequest,
   res: Response
 ): Promise<any> => {
   //req data validation
-  const { supplyerId } = req.params;
+  const { supplierId } = req.params;
   const { name, phoneNumber, house, street, city, state, postCode, country } =
     req.body;
 
-  const validateData = updateSupplyerZod.safeParse({
-    supplyerId,
+  const validateData = updateSupplierZod.safeParse({
+    supplierId,
     name,
     phoneNumber,
     house,
@@ -640,10 +640,10 @@ const updateSupplyer = async (
     });
   }
   try {
-    //check if the supplyer exists
-    const foundSupplyer = await User.findById(validateData.data.supplyerId);
+    //check if the supplier exists
+    const foundSupplier = await User.findById(validateData.data.supplierId);
 
-    if (!foundSupplyer || foundSupplyer.role !== "supplier") {
+    if (!foundSupplier || foundSupplier.role !== "supplier") {
       return res.status(404).json({
         status: "error",
         message: "Supppler was not found.",
@@ -652,14 +652,14 @@ const updateSupplyer = async (
 
     //check for changes
     if (
-      foundSupplyer.name === validateData.data.name &&
-      foundSupplyer.phoneNumber === Number(validateData.data.phoneNumber) &&
-      foundSupplyer.address.house === validateData.data.house &&
-      foundSupplyer.address.street === validateData.data.street &&
-      foundSupplyer.address.city === validateData.data.city &&
-      foundSupplyer.address.state === validateData.data.state &&
-      foundSupplyer.address.postCode === Number(validateData.data.postCode) &&
-      foundSupplyer.address.country === validateData.data.country
+      foundSupplier.name === validateData.data.name &&
+      foundSupplier.phoneNumber === Number(validateData.data.phoneNumber) &&
+      foundSupplier.address.house === validateData.data.house &&
+      foundSupplier.address.street === validateData.data.street &&
+      foundSupplier.address.city === validateData.data.city &&
+      foundSupplier.address.state === validateData.data.state &&
+      foundSupplier.address.postCode === Number(validateData.data.postCode) &&
+      foundSupplier.address.country === validateData.data.country
     ) {
       return res.status(409).json({
         status: "success",
@@ -667,9 +667,9 @@ const updateSupplyer = async (
       });
     }
 
-    //update the supplyer
-    const updatedSupplyer = await User.findByIdAndUpdate(
-      validateData.data.supplyerId,
+    //update the supplier
+    const updatedSupplier = await User.findByIdAndUpdate(
+      validateData.data.supplierId,
       {
         name: validateData.data.name,
         phoneNumber: validateData.data.phoneNumber,
@@ -686,13 +686,13 @@ const updateSupplyer = async (
 
     await logger(
       req.userId ?? "",
-      "updateSupplyer",
-      `An admin of id ${req.userId} has updated a supplyer of id ${updatedSupplyer?._id}`
+      "updateSupplier",
+      `An admin of id ${req.userId} has updated a supplier of id ${updatedSupplier?._id}`
     );
 
     return res.status(200).json({
       status: "error",
-      message: "Supplyer has been updated.",
+      message: "Supplier has been updated.",
     });
   } catch (error) {
     return res.status(500).json({
@@ -702,15 +702,15 @@ const updateSupplyer = async (
   }
 };
 
-const deleteSupplyer = async (
+const deleteSupplier = async (
   req: customExpressRequest,
   res: Response
 ): Promise<any> => {
   //data validation
-  const { supplyerId } = req.params;
+  const { supplierId } = req.params;
 
-  const validateData = deleteSupplyerZod.safeParse({
-    supplyerId,
+  const validateData = deleteSupplierZod.safeParse({
+    supplierId,
   });
 
   if (!validateData.success) {
@@ -721,29 +721,29 @@ const deleteSupplyer = async (
   }
 
   try {
-    //check supplyer exists
-    const foundSupplyer = await User.findById(validateData.data.supplyerId);
+    //check supplier exists
+    const foundSupplier = await User.findById(validateData.data.supplierId);
 
-    if (!foundSupplyer) {
+    if (!foundSupplier) {
       return res.status(404).json({
         status: "error",
-        message: "No supplyer found with the provided id",
+        message: "No supplier found with the provided id",
       });
     }
 
-    //delete supplyer
+    //delete supplier
 
-    await User.findByIdAndDelete(validateData.data.supplyerId);
+    await User.findByIdAndDelete(validateData.data.supplierId);
 
     await logger(
       req.userId ?? "",
-      "deleteSupplyer",
-      `An admin of id ${req.userId} has deleted a supplyer of id ${supplyerId}`
+      "deleteSupplier",
+      `An admin of id ${req.userId} has deleted a supplier of id ${supplierId}`
     );
 
     return res.status(200).json({
       status: "success",
-      message: "Supplyer has been deleted.",
+      message: "Supplier has been deleted.",
     });
   } catch (error) {
     return res.status(500).json({
@@ -762,8 +762,8 @@ export {
   logoutAdmin,
   requestChangePassword,
   changePassword,
-  addSupplyer,
-  getSupplyers,
-  updateSupplyer,
-  deleteSupplyer,
+  addSupplier,
+  getSuppliers,
+  updateSupplier,
+  deleteSupplier,
 };

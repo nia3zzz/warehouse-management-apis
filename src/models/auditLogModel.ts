@@ -5,9 +5,10 @@ type IAction =
   | "loginAdmin"
   | "logoutAdmin"
   | "removeAdmin"
-  | "addSupplyer"
-  | "updateSupplyer"
-  | "deleteSupplyer"
+  | "addSupplier"
+  | "updateSupplier"
+  | "deleteSupplier"
+  | "createCategory"
   | "addProducts"
   | "removeProducts";
 
@@ -35,9 +36,10 @@ const auditLogSchema = new Schema<IAuditLog>(
         "loginAdmin",
         "logoutAdmin",
         "removeAdmin",
-        "addSupplyer",
-        "updateSupplyer",
-        "deleteSupplyer",
+        "addSupplier",
+        "updateSupplier",
+        "deleteSupplier",
+        "createCategory",
         "addProducts",
         "removeProducts",
       ],

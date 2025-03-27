@@ -40,6 +40,7 @@ const authHandler = async (
         status: "error",
         message: "Unauthorized",
       });
+      return;
     }
 
     next();
