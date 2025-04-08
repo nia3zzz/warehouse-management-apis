@@ -10,4 +10,10 @@ const createCategoryZod = z.object({
     .min(30, { message: "Invalid description." }),
 });
 
-export { createCategoryZod };
+const getCategorysZod = z.object({
+  sortBy: z.enum(["firstToAdd", "lastToAdd", "mostProducts"], {
+    errorMap: () => ({ message: "Invalid query." }),
+  }),
+});
+
+export { createCategoryZod, getCategorysZod };
