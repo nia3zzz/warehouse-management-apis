@@ -4,6 +4,7 @@ import {
   createCategoryZod,
   getCategorysZod,
   getCategoryZod,
+  updateCategoryZod,
 } from "../DTO/categoryZodValidator";
 import { Category } from "../models/categoryModel";
 import logger from "../utils/logger";
@@ -194,4 +195,79 @@ const getCategory = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-export { createCategory, getCategorys, getCategory };
+const updateCategory = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  //req data validation
+  const { id } = req.params;
+  const { name, description } = req.body;
+
+  const validateData = updateCategoryZod.safeParse({
+    id,
+    name,
+    description,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    const foundCategory = await Category.findById(validateData.data.id);
+
+    if (!foundCategory) {
+      return res.status(404).json({
+        status: "error",
+        message: "No category found with this id.",
+      });
+    }
+
+    if (
+      foundCategory.name === validateData.data.name &&
+      foundCategory.description === validateData.data.description
+    ) {
+      return res.status(409).json({
+        status: "error",
+        message: "No data found to update the category.",
+      });
+    }
+
+    const checkCategoryExists = await Category.findOne({
+      name: validateData.data.name,
+    });
+
+    if (checkCategoryExists) {
+      return res.status(409).json({
+        status: "error",
+        message: "Category with this name already exists.",
+      });
+    }
+
+    await Category.findByIdAndUpdate(validateData.data.id, {
+      name: validateData.data.name,
+      description: validateData.data.description,
+    });
+
+    await logger(
+      req.userId ?? "",
+      "updateCategory",
+      `An admin of id ${req.userId} has updated a category of id ${foundCategory._id}.`
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Category has been updated.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+export { createCategory, getCategorys, getCategory, updateCategory };

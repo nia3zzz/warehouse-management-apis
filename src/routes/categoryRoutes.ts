@@ -4,6 +4,7 @@ import {
   createCategory,
   getCategory,
   getCategorys,
+  updateCategory,
 } from "../controllers/categoryController";
 
 const router: Router = express.Router();
@@ -16,5 +17,7 @@ router.post("/", authHandler, createCategory);
 router.get("/", authHandler, getCategorys);
 //get data of a category
 router.get("/:id", authHandler, getCategory);
+//update an existing route
+router.put("/:id", authHandler, updateCategory);
 
 export default router;

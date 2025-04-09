@@ -23,4 +23,23 @@ const getCategoryZod = z.object({
     .max(24, "Invalid id provided."),
 });
 
-export { createCategoryZod, getCategorysZod, getCategoryZod };
+const updateCategoryZod = z.object({
+  id: z
+    .string({ message: "Must be a valid id." })
+    .min(24, "Invalid id provided.")
+    .max(24, "Invalid id provided."),
+  name: z
+    .string({ message: "Invalid name." })
+    .min(3, { message: "Invalid name." })
+    .max(30, { message: "Invalid name." }),
+  description: z
+    .string({ message: "Invalid description." })
+    .min(30, { message: "Invalid description." }),
+});
+
+export {
+  createCategoryZod,
+  getCategorysZod,
+  getCategoryZod,
+  updateCategoryZod,
+};
