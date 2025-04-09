@@ -1,8 +1,9 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { customExpressRequest } from "../middlewares/authHandler";
 import {
   createCategoryZod,
   getCategorysZod,
+  getCategoryZod,
 } from "../DTO/categoryZodValidator";
 import { Category } from "../models/categoryModel";
 import logger from "../utils/logger";
@@ -62,10 +63,7 @@ const createCategory = async (
   }
 };
 
-const getCategorys = async (
-  req: customExpressRequest,
-  res: Response
-): Promise<any> => {
+const getCategorys = async (req: Request, res: Response): Promise<any> => {
   //req query validation
   const { sortBy } = req.query;
 
@@ -146,4 +144,54 @@ const getCategorys = async (
   }
 };
 
-export { createCategory, getCategorys };
+const getCategory = async (req: Request, res: Response): Promise<any> => {
+  //req body validation
+  const { id } = req.params;
+
+  const validateData = getCategoryZod.safeParse({
+    id,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    const categoryDocument = await Category.findById(validateData.data.id);
+
+    if (!categoryDocument) {
+      return res.status(404).json({
+        status: "error",
+        message: "No category found with this id.",
+      });
+    }
+
+    const foundProducts = await Product.find({
+      categoryId: categoryDocument._id,
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Data has been fetched.",
+      data: {
+        id: categoryDocument._id,
+        name: categoryDocument.name,
+        description: categoryDocument.description,
+        products: foundProducts.map((product) => ({
+          id: product.id,
+          name: product.name,
+        })),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+export { createCategory, getCategorys, getCategory };
