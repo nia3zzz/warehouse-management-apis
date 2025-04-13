@@ -22,4 +22,37 @@ const createProductZod = z.object({
     .max(24, { message: "Invalid supplier id." }),
 });
 
-export { createProductZod };
+const getProductsZod = z.object({
+  categoryId: z
+    .string({ message: "Invalid query category." })
+    .max(24, "Invalid query category.")
+    .min(24, "Invalid query category.")
+    .optional(),
+  supplierId: z
+    .string({ message: "Invalid query supplier." })
+    .max(24, "Invalid query supplier.")
+    .min(24, "Invalid query supplier.")
+    .optional(),
+  price_max: z
+    .string({ message: "Invalid query max price." })
+    .max(2147483647, "Invalid query max price.")
+    .min(0, "Invalid query max price.")
+    .optional(),
+  price_min: z
+    .string({ message: "Invalid query min price." })
+    .max(2147483647, "Invalid query min price.")
+    .min(0, "Invalid query min price.")
+    .optional(),
+  offset: z
+    .string({ message: "Invalid query offset." })
+    .max(2147483647, "Invalid query offset.")
+    .min(0, "Invalid query offset.")
+    .optional(),
+  limit: z
+    .string({ message: "Invalid query limit." })
+    .max(2147483647, "Invalid query limit.")
+    .min(0, "Invalid query limit.")
+    .optional(),
+});
+
+export { createProductZod, getProductsZod };

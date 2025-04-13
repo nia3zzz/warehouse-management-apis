@@ -10,6 +10,7 @@ type IAction =
   | "deleteSupplier"
   | "createCategory"
   | "updateCategory"
+  | "deleteCategory"
   | "addProducts"
   | "removeProducts";
 
@@ -42,6 +43,7 @@ const auditLogSchema = new Schema<IAuditLog>(
         "deleteSupplier",
         "createCategory",
         "updateCategory",
+        "deleteCategory",
         "addProducts",
         "removeProducts",
       ],

@@ -10,6 +10,7 @@ type IAction =
   | "deleteSupplier"
   | "createCategory"
   | "updateCategory"
+  | "deleteCategory"
   | "addProducts"
   | "removeProducts";
 

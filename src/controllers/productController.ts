@@ -1,5 +1,5 @@
-import { Response } from "express";
-import { createProductZod } from "../DTO/productZodValidator";
+import { Request, Response } from "express";
+import { createProductZod, getProductsZod } from "../DTO/productZodValidator";
 import User from "../models/userModel";
 import { Product } from "../models/productModel";
 import { Category } from "../models/categoryModel";
@@ -98,4 +98,67 @@ const createProduct = async (
   }
 };
 
-export { createProduct };
+const getProducts = async (req: Request, res: Response): Promise<any> => {
+  //req query validation
+  const { categoryId, supplierId, price_max, price_min, offset, limit } =
+    req.query;
+
+  const validateQuery = getProductsZod.safeParse({
+    categoryId,
+    supplierId,
+    price_max,
+    price_min,
+    offset,
+    limit,
+  });
+
+  if (!validateQuery.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateQuery.error.errors[0].message,
+    });
+  }
+
+  try {
+    const filter: Record<string, any> = {};
+
+    if (validateQuery.data.categoryId != null) {
+      filter.categoryId = validateQuery.data.categoryId;
+    }
+
+    if (validateQuery.data.supplierId != null) {
+      filter.supplierId = validateQuery.data.supplierId;
+    }
+
+    if (
+      validateQuery.data.price_min != null ||
+      validateQuery.data.price_max != null
+    ) {
+      const min = Number(validateQuery.data.price_min);
+      const max = Number(validateQuery.data.price_max);
+
+      filter.price = {
+        $gte: !isNaN(min) ? min : 0,
+        $lte: !isNaN(max) ? max : 2147483647,
+      };
+    }
+
+    const products = await Product.find(filter)
+      .skip(Number(validateQuery.data.offset) ?? 0)
+      .limit(Number(validateQuery.data.limit) ?? 0)
+      .sort({ price: 1 });
+
+    return res.status(200).json({
+      status: "success",
+      message: `${products.length} products has been fetched.`,
+      data: products,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+export { createProduct, getProducts };

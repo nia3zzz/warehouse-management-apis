@@ -270,4 +270,60 @@ const updateCategory = async (
   }
 };
 
-export { createCategory, getCategorys, getCategory, updateCategory };
+const deleteCategory = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  //req data validation
+  const { id } = req.params;
+
+  const validateData = getCategoryZod.safeParse({
+    id,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    //check category exists
+    const foundCategory = await Category.findById(validateData.data.id);
+
+    if (!foundCategory) {
+      return res.status(404).json({
+        status: "error",
+        message: "No category found with this id.",
+      });
+    }
+
+    //audit log
+    await logger(
+      req.userId ?? "",
+      "deleteCategory",
+      `An admin of id ${req.userId} has deleted a category of id ${foundCategory._id}.`
+    );
+
+    await Category.findByIdAndDelete(foundCategory._id);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Category has been deleted.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+export {
+  createCategory,
+  getCategorys,
+  getCategory,
+  updateCategory,
+  deleteCategory,
+};
