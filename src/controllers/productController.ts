@@ -148,10 +148,39 @@ const getProducts = async (req: Request, res: Response): Promise<any> => {
       .limit(Number(validateQuery.data.limit) ?? 0)
       .sort({ price: 1 });
 
+    const categories = await Category.find({}, "_id name");
+    const categoryMap: Record<string, string> = {};
+    categories.forEach((cat) => {
+      categoryMap[cat._id.toString()] = cat.name;
+    });
+
+    const suppliers = await User.find(
+      {
+        role: "supplier",
+      },
+      "_id name"
+    );
+    const supplierMap: Record<string, string> = {};
+    suppliers.forEach((supp) => {
+      supplierMap[supp._id.toString()] = supp.name;
+    });
+
     return res.status(200).json({
       status: "success",
       message: `${products.length} products has been fetched.`,
-      data: products,
+      data: products.map((product) => ({
+        _id: product._id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        quantity: product.quantity,
+        categoryId: product.categoryId,
+        categoryName: categoryMap[product.categoryId.toString()] || "Unknown",
+        supplierId: product.supplierId,
+        supplierName: supplierMap[product.supplierId.toString()] || "Unknown",
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+      })),
     });
   } catch (error) {
     return res.status(500).json({
@@ -160,5 +189,7 @@ const getProducts = async (req: Request, res: Response): Promise<any> => {
     });
   }
 };
+
+// const getProduct =
 
 export { createProduct, getProducts };

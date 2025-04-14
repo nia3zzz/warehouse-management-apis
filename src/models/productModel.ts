@@ -7,6 +7,8 @@ interface IProduct extends Document {
   quantity: number;
   categoryId: mongoose.Schema.Types.ObjectId;
   supplierId: mongoose.Schema.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const productSchema = new Schema<IProduct>(
