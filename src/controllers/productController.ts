@@ -3,6 +3,7 @@ import {
   createProductZod,
   getProductsZod,
   getProductZod,
+  updateProductZod,
 } from "../DTO/productZodValidator";
 import User from "../models/userModel";
 import { Product } from "../models/productModel";
@@ -260,4 +261,110 @@ const getProduct = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-export { createProduct, getProducts, getProduct };
+const updateProduct = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  //req data validation
+  const { id } = req.params;
+  const { name, description, price, quantity, categoryId, supplierId } =
+    req.body;
+
+  const validateData = updateProductZod.safeParse({
+    id,
+    name,
+    description,
+    price,
+    quantity,
+    categoryId,
+    supplierId,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    const foundProduct = await Product.findById(validateData.data.id);
+
+    if (!foundProduct) {
+      return res.status(404).json({
+        status: "error",
+        message: "No product found with the provided id.",
+      });
+    }
+
+    if (
+      foundProduct.name === validateData.data.name &&
+      foundProduct.description === validateData.data.description &&
+      foundProduct.price === validateData.data.price &&
+      foundProduct.quantity === validateData.data.quantity &&
+      foundProduct.categoryId.toString() === validateData.data.categoryId &&
+      foundProduct.supplierId.toString() === validateData.data.supplierId
+    ) {
+      return res.status(409).json({
+        status: "error",
+        message: "No changes found to update product.",
+      });
+    }
+
+    if (foundProduct.categoryId.toString() !== validateData.data.categoryId) {
+      const foundCategory = await Category.findById(
+        validateData.data.categoryId
+      );
+
+      if (!foundCategory) {
+        return res.status(404).json({
+          state: "error",
+          message: "No category found with this id.",
+        });
+      }
+    }
+
+    if (foundProduct.supplierId.toString() !== validateData.data.supplierId) {
+      const foundSupplier = User.findById(validateData.data.supplierId);
+
+      if (!foundSupplier) {
+        return res.status(404).json({
+          status: "error",
+          message: "No supplier found with this id.",
+        });
+      }
+    }
+
+    const duplicateProductByName = await Product.findOne({
+      name: validateData.data.name,
+    });
+
+    if (duplicateProductByName) {
+      return res.status(404).json({
+        status: "error",
+        message: "Product already exists with this name.",
+      });
+    }
+
+    await Product.findByIdAndUpdate(foundProduct._id, {
+      name: validateData.data.name,
+      description: validateData.data.description,
+      price: validateData.data.price,
+      quantity: validateData.data.quantity,
+      categoryId: validateData.data.categoryId,
+      supplierId: validateData.data.supplierId,
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Product has been updated.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+export { createProduct, getProducts, getProduct, updateProduct };
