@@ -1,6 +1,10 @@
 import express, { Router } from "express";
 import authHandler from "../middlewares/authHandler";
-import { createProduct, getProducts } from "../controllers/productController";
+import {
+  createProduct,
+  getProduct,
+  getProducts,
+} from "../controllers/productController";
 
 const router: Router = express.Router();
 
@@ -10,5 +14,7 @@ const router: Router = express.Router();
 router.post("/", authHandler, createProduct);
 //get products
 router.get("/", authHandler, getProducts);
+//get product
+router.get("/:id", authHandler, getProduct);
 
 export default router;

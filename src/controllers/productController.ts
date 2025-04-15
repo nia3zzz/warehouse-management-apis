@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
-import { createProductZod, getProductsZod } from "../DTO/productZodValidator";
+import {
+  createProductZod,
+  getProductsZod,
+  getProductZod,
+} from "../DTO/productZodValidator";
 import User from "../models/userModel";
 import { Product } from "../models/productModel";
 import { Category } from "../models/categoryModel";
@@ -190,6 +194,70 @@ const getProducts = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-// const getProduct =
+const getProduct = async (req: Request, res: Response): Promise<any> => {
+  //req data validation
+  const { id } = req.params;
 
-export { createProduct, getProducts };
+  const validateData = getProductZod.safeParse({ id });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    const product = await Product.findById(validateData.data.id);
+
+    if (!product) {
+      return res.status(404).json({
+        status: "error",
+        message: "No product found with this id.",
+      });
+    }
+
+    const category = await Category.findById(product.categoryId);
+
+    if (!category) {
+      return res.status(500).json({
+        status: "error",
+        message: "Something went wrong.",
+      });
+    }
+
+    const supplier = await User.findById(product.supplierId);
+
+    if (!supplier) {
+      return res.status(500).json({
+        status: "error",
+        message: "Something went wrong.",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Product data has been fetched.",
+      data: {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        quantity: product.quantity,
+        categoryId: product.categoryId,
+        categoryName: category.name,
+        supplierId: product.supplierId,
+        supplierName: supplier.name,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+export { createProduct, getProducts, getProduct };

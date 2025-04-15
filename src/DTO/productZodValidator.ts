@@ -55,4 +55,10 @@ const getProductsZod = z.object({
     .optional(),
 });
 
-export { createProductZod, getProductsZod };
+const getProductZod = z.object({
+  id:z.string({
+    
+  })
+})
+
+export { createProductZod, getProductsZod, getProductZod};
