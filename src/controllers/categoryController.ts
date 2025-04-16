@@ -47,7 +47,7 @@ const createCategory = async (
     });
 
     await logger(
-      req.userId ?? "",
+      req.userId as string,
       "createCategory",
       `An admin of id ${req.userId} has created a category of id ${categoryDocument._id}`
     );
@@ -253,9 +253,9 @@ const updateCategory = async (
     });
 
     await logger(
-      req.userId ?? "",
+      req.userId as string,
       "updateCategory",
-      `An admin of id ${req.userId} has updated a category of id ${foundCategory._id}.`
+      `An admin of id ${req.userId} has updated a category of id ${foundCategory._id}`
     );
 
     return res.status(200).json({
@@ -301,9 +301,9 @@ const deleteCategory = async (
 
     //audit log
     await logger(
-      req.userId ?? "",
+      req.userId as string,
       "deleteCategory",
-      `An admin of id ${req.userId} has deleted a category of id ${foundCategory._id}.`
+      `An admin of id ${req.userId} has deleted a category of id ${foundCategory._id}`
     );
 
     await Category.findByIdAndDelete(foundCategory._id);

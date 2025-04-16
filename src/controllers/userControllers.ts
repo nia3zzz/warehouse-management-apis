@@ -283,11 +283,11 @@ const approveRemoveAdmin = async (
       await sendEmail({ email: foundAdmin.email }, "appovedNotification");
 
       await logger(
-        req.userId ?? "",
+        req.userId as string,
         "newAdminAdded",
         `An Admin of id ${req.userId ?? ""} has approved a new admin of id ${
           foundAdmin._id
-        }.`
+        }`
       );
 
       return res.status(200).json({
@@ -300,11 +300,11 @@ const approveRemoveAdmin = async (
       await sendEmail({ email: foundAdmin.email }, "deleteAccount");
 
       await logger(
-        req.userId ?? "",
+        req.userId as string,
         "removeAdmin",
         `An Admin of id ${req.userId ?? ""} has removed an admin of id ${
           foundAdmin._id
-        }.`
+        }`
       );
 
       return res.status(200).json({
@@ -388,7 +388,7 @@ const logoutAdmin = async (
     res.clearCookie("token");
 
     await logger(
-      req.userId ?? "",
+      req.userId as string,
       "logoutAdmin",
       `An Admin of id ${req.userId ?? ""} has logged out.`
     );
@@ -565,7 +565,7 @@ const addSupplier = async (
     });
 
     await logger(
-      req.userId ?? "",
+      req.userId as string,
       "addSupplier",
       `An admin of id ${req.userId} has added an supplier of id ${supplier._id}`
     );
@@ -601,7 +601,7 @@ const getSuppliers = async (req: Request, res: Response): Promise<any> => {
         name: supplier.name,
         phoneNumber: supplier.phoneNumber,
         profile_Picture: supplier.profile_Picture,
-        address:supplier.address
+        address: supplier.address,
       })),
     });
   } catch (error) {
@@ -685,7 +685,7 @@ const updateSupplier = async (
     );
 
     await logger(
-      req.userId ?? "",
+      req.userId as string,
       "updateSupplier",
       `An admin of id ${req.userId} has updated a supplier of id ${updatedSupplier?._id}`
     );
@@ -736,7 +736,7 @@ const deleteSupplier = async (
     await User.findByIdAndDelete(validateData.data.supplierId);
 
     await logger(
-      req.userId ?? "",
+      req.userId as string,
       "deleteSupplier",
       `An admin of id ${req.userId} has deleted a supplier of id ${supplierId}`
     );

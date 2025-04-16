@@ -86,8 +86,8 @@ const createProduct = async (
     });
 
     await logger(
-      req.userId ?? "",
-      "addProducts",
+      req.userId as string,
+      "addProduct",
       `An admin of id ${req.userId} has added a post of id ${productDocument._id}`
     );
 
@@ -355,6 +355,12 @@ const updateProduct = async (
       supplierId: validateData.data.supplierId,
     });
 
+    await logger(
+      req.userId as string,
+      "updateProduct",
+      `An admin of id ${req.userId} has updated a product of id ${foundProduct._id}`
+    );
+
     return res.status(200).json({
       status: "success",
       message: "Product has been updated.",
@@ -367,4 +373,53 @@ const updateProduct = async (
   }
 };
 
-export { createProduct, getProducts, getProduct, updateProduct };
+const deleteProduct = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  //req data validation
+  const { id } = req.params;
+
+  //get product zod uses the same schema that we would need to validate the id
+  const validateData = getProductZod.safeParse({
+    id,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    const foundProduct = await Product.findById(validateData.data.id);
+
+    if (!foundProduct) {
+      return res.status(404).json({
+        status: "error",
+        message: "No product found with this id.",
+      });
+    }
+
+    await Product.findByIdAndDelete(validateData.data.id);
+
+    await logger(
+      req.userId as string,
+      "removeProduct",
+      `An admin of id ${req.userId} has removed a product of id ${validateData.data.id}`
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Product has been deleted.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+export { createProduct, getProducts, getProduct, updateProduct, deleteProduct };

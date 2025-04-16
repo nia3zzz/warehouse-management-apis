@@ -2,6 +2,7 @@ import express, { Router } from "express";
 import authHandler from "../middlewares/authHandler";
 import {
   createProduct,
+  deleteProduct,
   getProduct,
   getProducts,
   updateProduct,
@@ -19,5 +20,7 @@ router.get("/", authHandler, getProducts);
 router.get("/:id", authHandler, getProduct);
 //update product
 router.put("/:id", authHandler, updateProduct);
+//delete product
+router.delete("/:id", authHandler, deleteProduct);
 
 export default router;

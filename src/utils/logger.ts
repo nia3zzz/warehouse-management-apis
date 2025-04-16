@@ -11,8 +11,9 @@ type IAction =
   | "createCategory"
   | "updateCategory"
   | "deleteCategory"
-  | "addProducts"
-  | "removeProducts";
+  | "addProduct"
+  | "updateProduct"
+  | "removeProduct";
 
 const logger = async (
   userId: string,
