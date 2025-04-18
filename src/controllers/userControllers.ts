@@ -17,6 +17,7 @@ import sendEmail from "../utils/nodeMailer";
 import { customExpressRequest } from "../middlewares/authHandler";
 import emailVerifyModel from "../models/emailVerifyModel";
 import logger from "../utils/logger";
+import { getProductZod } from "../DTO/productZodValidator";
 
 interface cloudinaryUploadResponse {
   secure_url: string;
@@ -612,6 +613,59 @@ const getSuppliers = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+const getSupplier = async (req: Request, res: Response): Promise<any> => {
+  //req param validation
+  const { id } = req.params;
+
+  const validateData = getProductZod.safeParse({ id });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    //check suplier exists
+    const foundSupplier = await User.findOne({
+      _id: validateData.data.id,
+      role: "supplier",
+    });
+
+    if (!foundSupplier) {
+      return res.status(404).json({
+        status: "error",
+        message: "No supplier found with this id.",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Data has been fetched.",
+      data: {
+        _id: foundSupplier._id,
+        name: foundSupplier.name,
+        phoneNumber: foundSupplier.phoneNumber,
+        profile_Picture: foundSupplier.profile_Picture,
+        address: {
+          house: foundSupplier.address.house,
+          street: foundSupplier.address.street,
+          city: foundSupplier.address.city,
+          state: foundSupplier.address.state,
+          postCode: foundSupplier.address.postCode,
+          country: foundSupplier.address.country,
+        },
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error",
+    });
+  }
+};
+
 const updateSupplier = async (
   req: customExpressRequest,
   res: Response
@@ -764,6 +818,7 @@ export {
   changePassword,
   addSupplier,
   getSuppliers,
+  getSupplier,
   updateSupplier,
   deleteSupplier,
 };

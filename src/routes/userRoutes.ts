@@ -12,6 +12,7 @@ import {
   getSuppliers,
   updateSupplier,
   deleteSupplier,
+  getSupplier,
 } from "../controllers/userControllers";
 import upload from "../utils/multerSetup";
 import authHandler from "../middlewares/authHandler";
@@ -43,6 +44,8 @@ router.put("/admin/changepassword", authHandler, changePassword);
 router.post("/supplier", authHandler, addSupplier);
 //get an array of suppliers
 router.get("/supplier", authHandler, getSuppliers);
+//get data of a supplier
+router.get("/supplier/:id", authHandler, getSupplier);
 //update a supplier
 router.put("/supplier/:supplierId", authHandler, updateSupplier);
 //delee a supplier
