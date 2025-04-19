@@ -13,6 +13,7 @@ import {
   updateSupplier,
   deleteSupplier,
   getSupplier,
+  createCustomer,
 } from "../controllers/userControllers";
 import upload from "../utils/multerSetup";
 import authHandler from "../middlewares/authHandler";
@@ -51,4 +52,8 @@ router.put("/supplier/:supplierId", authHandler, updateSupplier);
 //delee a supplier
 router.delete("/supplier/:supplierId", authHandler, deleteSupplier);
 
+//customer routes
+
+//add a customer
+router.post("/customer", authHandler, createCustomer);
 export default router;

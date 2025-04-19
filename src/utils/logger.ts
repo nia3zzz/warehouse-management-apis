@@ -13,7 +13,8 @@ type IAction =
   | "deleteCategory"
   | "addProduct"
   | "updateProduct"
-  | "removeProduct";
+  | "removeProduct"
+  | "addCustomer";
 
 const logger = async (
   userId: string,

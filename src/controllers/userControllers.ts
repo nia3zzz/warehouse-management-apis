@@ -4,6 +4,7 @@ import {
   approveAdminZod,
   changePasswordZod,
   createAdminZod,
+  createCustomerZod,
   deleteSupplierZod,
   loginAdminZod,
   updateSupplierZod,
@@ -807,6 +808,80 @@ const deleteSupplier = async (
   }
 };
 
+//customer controller functions
+const createCustomer = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  //req data validation
+  const { name, phoneNumber, house, street, city, state, postCode, country } =
+    req.body;
+
+  const validateData = createCustomerZod.safeParse({
+    name,
+    phoneNumber,
+    house,
+    street,
+    city,
+    state,
+    postCode,
+    country,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    //check duplication of the customer in database
+    const checkDuplicateCustomer = await User.findOne({
+      phoneNumber: validateData.data.phoneNumber,
+    });
+
+    if (checkDuplicateCustomer) {
+      return res.status(409).json({
+        status: "error",
+        message: "Customer already exists with this phone number.",
+      });
+    }
+
+    //save the customer in the database
+    const customer = await User.create({
+      name: validateData.data.name,
+      phoneNumber: validateData.data.phoneNumber,
+      address: {
+        house: validateData.data.house,
+        street: validateData.data.street,
+        city: validateData.data.city,
+        state: validateData.data.state,
+        postCode: validateData.data.postCode,
+        country: validateData.data.country,
+      },
+      role: "customer",
+    });
+
+    //save action in audit log
+    await logger(
+      req.userId as string,
+      "addCustomer",
+      `An admin of id ${req.userId} has added a customer of id ${customer._id}`
+    );
+
+    return res.status(201).json({
+      status: "success",
+      message: "Customer has been added.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
 export {
   createAdmin,
   loginAdmin,
@@ -821,4 +896,5 @@ export {
   getSupplier,
   updateSupplier,
   deleteSupplier,
+  createCustomer,
 };
