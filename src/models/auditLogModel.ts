@@ -14,7 +14,10 @@ type IAction =
   | "addProduct"
   | "updateProduct"
   | "removeProduct"
-  | "addCustomer";
+  | "addCustomer"
+  | "createSale"
+  | "updateSale"
+  | "deleteSale";
 
 interface IAuditLog extends Document {
   userId: mongoose.Types.ObjectId;
@@ -50,6 +53,9 @@ const auditLogSchema = new Schema<IAuditLog>(
         "updateProduct",
         "removeProduct",
         "addCustomer",
+        "createSale",
+        "updateSale",
+        "deleteSale",
       ],
     },
 

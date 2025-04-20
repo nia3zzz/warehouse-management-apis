@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import errorHandler from "./middlewares/errorHandler";
 import categoryRoutes from "./routes/categoryRoutes";
 import productRoutes from "./routes/productRoutes";
+import saleRoutes from "./routes/saleRoutes";
 
 const app: express.Application = express();
 const port: number = Number(process.env.PORT) || 3000;
@@ -20,6 +21,7 @@ app.get("/", (req: Request, res: Response) => {
 app.use("/user", userRoutes);
 app.use("/category", categoryRoutes);
 app.use("/product", productRoutes);
+app.use("/sale", saleRoutes);
 
 app.use("*", (req: Request, res: Response) => {
   res.status(404).send("Page not found");

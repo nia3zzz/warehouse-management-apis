@@ -5,7 +5,7 @@ import {
   getProductZod,
   updateProductZod,
 } from "../DTO/productZodValidator";
-import User from "../models/userModel";
+import { User } from "../models/userModel";
 import { Product } from "../models/productModel";
 import { Category } from "../models/categoryModel";
 import logger from "../utils/logger";

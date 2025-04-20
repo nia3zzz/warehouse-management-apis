@@ -128,4 +128,4 @@ const userSchema = new Schema<IUser>(
 
 const User: Model<IUser> = mongoose.model("User", userSchema);
 
-export default User;
+export { User };

@@ -11,7 +11,7 @@ import {
   verifyAdminEmailZod,
 } from "../DTO/userZodValidator";
 import bcrypt from "bcryptjs";
-import User from "../models/userModel";
+import { User } from "../models/userModel";
 import cloudinary from "../utils/cloudinarySetup";
 import jwt from "jsonwebtoken";
 import sendEmail from "../utils/nodeMailer";

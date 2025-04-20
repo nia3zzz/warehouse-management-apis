@@ -14,7 +14,10 @@ type IAction =
   | "addProduct"
   | "updateProduct"
   | "removeProduct"
-  | "addCustomer";
+  | "addCustomer"
+  | "createSale"
+  | "updateSale"
+  | "deleteSale";
 
 const logger = async (
   userId: string,
