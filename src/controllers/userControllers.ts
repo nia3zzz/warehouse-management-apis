@@ -7,6 +7,7 @@ import {
   createCustomerZod,
   deleteSupplierZod,
   loginAdminZod,
+  updateCustomerZod,
   updateSupplierZod,
   verifyAdminEmailZod,
 } from "../DTO/userZodValidator";
@@ -882,6 +883,102 @@ const createCustomer = async (
   }
 };
 
+const updateCustomer = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  //req data validation
+  const {id} = req.params
+  const {
+    name,
+    phoneNumber,
+    house,
+    street,
+    city,
+    state,
+    postCode,
+    country,
+  } = req.body;
+
+  //using same zod schema as create customer and it has same values
+  const validateData = updateCustomerZod.safeParse({
+    id,
+    name,
+    phoneNumber,
+    house,
+    street,
+    city,
+    state,
+    postCode,
+    country,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    //if customer doesnt exist
+    const foundCustomer = await User.findById(validateData.data.id);
+
+    if (!foundCustomer) {
+      return res.status(404).json({
+        status: "error",
+        message: "Customer not found with this id.",
+      });
+    }
+
+    //if there is no changes for updating the values
+    if (
+      foundCustomer.name === validateData.data.name &&
+      foundCustomer.phoneNumber === Number(validateData.data.phoneNumber) &&
+      foundCustomer.address.house === validateData.data.house &&
+      foundCustomer.address.street === validateData.data.street &&
+      foundCustomer.address.city === validateData.data.city &&
+      foundCustomer.address.state === validateData.data.state &&
+      foundCustomer.address.postCode === Number(validateData.data.postCode) &&
+      foundCustomer.address.country === validateData.data.country
+    ) {
+      return res.status(409).json({
+        status: "error",
+        message: "No changes found to update customer.",
+      });
+    }
+
+    await User.findByIdAndUpdate(validateData.data.id, {
+      name: validateData.data.name,
+      phoneNumber: Number(validateData.data.phoneNumber),
+      address: {
+        house: validateData.data.house,
+        street: validateData.data.street,
+        city: validateData.data.city,
+        state: validateData.data.state,
+        postCode: Number(validateData.data.postCode),
+        country: validateData.data.country,
+      },
+    });
+
+    await logger(
+      req.userId as string,
+      "updateCustomer",
+      `An admin of id ${req.userId} has updated a customer of id ${foundCustomer._id}`
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Customer has been updated.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
 export {
   createAdmin,
   loginAdmin,
@@ -897,4 +994,5 @@ export {
   updateSupplier,
   deleteSupplier,
   createCustomer,
+  updateCustomer,
 };

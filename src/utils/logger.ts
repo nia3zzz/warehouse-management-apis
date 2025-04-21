@@ -15,6 +15,8 @@ type IAction =
   | "updateProduct"
   | "removeProduct"
   | "addCustomer"
+  | "updateCustomer"
+  | "deleteCustomer"
   | "createSale"
   | "updateSale"
   | "deleteSale";

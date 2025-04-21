@@ -182,7 +182,41 @@ const createCustomerZod = z.object({
   country: z
     .string({ message: "Invalid country." })
     .min(1, { message: "Invalid country." }),
-  
+});
+
+const updateCustomerZod = z.object({
+  id: z
+    .string({ message: "Must be a valid id." })
+    .min(24, "Invalid id provided.")
+    .max(24, "Invalid id provided."),
+  name: z
+    .string({ message: "Invalid name." })
+    .min(2, { message: "Invalid name." })
+    .max(30, { message: "Invalid name." }),
+  phoneNumber: z
+    .string({ message: "Invalid phone number." })
+    .min(11, { message: "Invalid phone number." })
+    .max(11, { message: "Invalid phone number." }),
+  house: z
+    .string({ message: "Invalid house." })
+    .min(1, { message: "Invalid house." }),
+  street: z
+    .string({ message: "Invalid street." })
+    .min(1, { message: "Invalid street." }),
+  city: z
+    .string({ message: "Invalid city." })
+    .min(1, { message: "Invalid city." }),
+  state: z
+    .string({ message: "Invalid state." })
+    .min(1, { message: "Invalid state." }),
+  postCode: z
+    .string({ message: "Invalid postcode." })
+    .min(4, { message: "Invalid postcode." })
+    .max(10, { message: "Invalid postcode." })
+    .regex(/^\d+$/, { message: "Invalid postcode." }),
+  country: z
+    .string({ message: "Invalid country." })
+    .min(1, { message: "Invalid country." }),
 });
 
 export {
@@ -195,4 +229,5 @@ export {
   updateSupplierZod,
   deleteSupplierZod,
   createCustomerZod,
+  updateCustomerZod,
 };
