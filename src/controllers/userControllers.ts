@@ -6,6 +6,7 @@ import {
   createAdminZod,
   createCustomerZod,
   deleteSupplierZod,
+  getCustomersZod,
   loginAdminZod,
   updateCustomerZod,
   updateSupplierZod,
@@ -20,6 +21,7 @@ import { customExpressRequest } from "../middlewares/authHandler";
 import emailVerifyModel from "../models/emailVerifyModel";
 import logger from "../utils/logger";
 import { getProductZod } from "../DTO/productZodValidator";
+import { SaleOrder } from "../models/saleOrderModel";
 
 interface cloudinaryUploadResponse {
   secure_url: string;
@@ -888,17 +890,9 @@ const updateCustomer = async (
   res: Response
 ): Promise<any> => {
   //req data validation
-  const {id} = req.params
-  const {
-    name,
-    phoneNumber,
-    house,
-    street,
-    city,
-    state,
-    postCode,
-    country,
-  } = req.body;
+  const { id } = req.params;
+  const { name, phoneNumber, house, street, city, state, postCode, country } =
+    req.body;
 
   //using same zod schema as create customer and it has same values
   const validateData = updateCustomerZod.safeParse({
@@ -979,6 +973,119 @@ const updateCustomer = async (
   }
 };
 
+const getCustomers = async (req: Request, res: Response): Promise<any> => {
+  //req queries validation
+  const { mostSoldTo, offSet, limit } = req.query;
+
+  const validateQuery = getCustomersZod.safeParse({
+    mostSoldTo,
+    offSet,
+    limit,
+  });
+
+  if (!validateQuery.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateQuery.error.errors[0].message,
+    });
+  }
+
+  try {
+    //get the data according to the queries
+    if (validateQuery.data.mostSoldTo === "true") {
+      const topCustomerIds = await SaleOrder.aggregate([
+        {
+          $group: {
+            _id: "$customerId",
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { count: -1 },
+        },
+        {
+          $limit:
+            isNaN(Number(validateQuery.data.limit)) ||
+            Number(validateQuery.data.limit) <= 0
+              ? 10
+              : Number(validateQuery.data.limit),
+        },
+        {
+          $skip:
+            isNaN(Number(validateQuery.data.offSet)) ||
+            Number(validateQuery.data.offSet) < 0
+              ? 0
+              : Number(validateQuery.data.offSet),
+        },
+      ]);
+
+      const foundCustomers = (
+        await Promise.all(
+          topCustomerIds.map((topCustomer) =>
+            User.findOne({
+              _id: topCustomer._id,
+              role: "customer",
+            })
+          )
+        )
+      ).filter((c) => c);
+
+      return res.status(200).json({
+        status: "success",
+        message: "Customers has been fetched.",
+        data: foundCustomers.map((foundCustomer) => {
+          return {
+            id: foundCustomer?._id,
+            name: foundCustomer?.name,
+            phoneNumber: foundCustomer?.phoneNumber,
+            address: {
+              house: foundCustomer?.address.house,
+              street: foundCustomer?.address.street,
+              city: foundCustomer?.address.city,
+              state: foundCustomer?.address.state,
+              postCode: foundCustomer?.address.postCode,
+              country: foundCustomer?.address.country,
+            },
+          };
+        }),
+      });
+    }
+
+    //without most sold to query
+
+    const foundCustomers = await User.find({
+      role: "customer",
+    })
+      .limit(Number(validateQuery.data.limit) ?? 10)
+      .skip(Number(validateQuery.data.offSet) ?? 0);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Customers has been fetched.",
+      data: foundCustomers.map((foundCustomer) => {
+        return {
+          id: foundCustomer._id,
+          name: foundCustomer.name,
+          phoneNumber: foundCustomer.phoneNumber,
+          address: {
+            house: foundCustomer.address.house,
+            street: foundCustomer.address.street,
+            city: foundCustomer.address.city,
+            state: foundCustomer.address.state,
+            postCode: foundCustomer.address.postCode,
+            country: foundCustomer.address.country,
+          },
+        };
+      }),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
 export {
   createAdmin,
   loginAdmin,
@@ -995,4 +1102,5 @@ export {
   deleteSupplier,
   createCustomer,
   updateCustomer,
+  getCustomers,
 };

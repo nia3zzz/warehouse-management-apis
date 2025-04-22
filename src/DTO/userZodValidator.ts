@@ -219,6 +219,24 @@ const updateCustomerZod = z.object({
     .min(1, { message: "Invalid country." }),
 });
 
+const getCustomersZod = z.object({
+  mostSoldTo: z
+    .union([z.literal("true"), z.literal("false")], {
+      errorMap: () => ({
+        message: "Invalid query most sold to.",
+      }),
+    })
+    .optional(),
+  offSet: z
+    .string({ message: "Invalid query offset." })
+    .min(0, "Invalid query offset.")
+    .optional(),
+  limit: z
+    .string({ message: "Invalid query limit." })
+    .min(0, "Invalid query limit.")
+    .optional(),
+});
+
 export {
   createAdminZod,
   loginAdminZod,
@@ -230,4 +248,5 @@ export {
   deleteSupplierZod,
   createCustomerZod,
   updateCustomerZod,
+  getCustomersZod,
 };
