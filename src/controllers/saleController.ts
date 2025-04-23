@@ -48,7 +48,7 @@ const createSale = async (
     }
 
     //check customer exists
-    const foundCustomer = User.findOne({
+    const foundCustomer = await User.findOne({
       _id: validateData.data.customerId,
       role: "customer",
     });
