@@ -7,6 +7,7 @@ import {
   createCustomerZod,
   deleteSupplierZod,
   getCustomersZod,
+  getCustomerZod,
   loginAdminZod,
   updateCustomerZod,
   updateSupplierZod,
@@ -22,6 +23,8 @@ import emailVerifyModel from "../models/emailVerifyModel";
 import logger from "../utils/logger";
 import { getProductZod } from "../DTO/productZodValidator";
 import { SaleOrder } from "../models/saleOrderModel";
+import { SaleOrderItem } from "../models/saleOrderItemModel";
+import { Product } from "../models/productModel";
 
 interface cloudinaryUploadResponse {
   secure_url: string;
@@ -1086,7 +1089,85 @@ const getCustomers = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+const getCustomer = async (req: Request, res: Response): Promise<any> => {
+  //req param id validation
+  const { id } = req.params;
 
+  const validateData = getCustomerZod.safeParse({
+    id,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    //check if customer exists
+    const foundCustomer = await User.findOne({
+      _id: validateData.data.id,
+    });
+
+    if (!foundCustomer) {
+      return res.status(404).json({
+        status: "error",
+        message: "No customer found with this id.",
+      });
+    }
+    //get an array of orders made by the customer
+    const foundOrders = await SaleOrder.find({
+      customerId: foundCustomer._id,
+    });
+
+    //map that orders array to get data of products
+    const foundOrderItems = await Promise.all(
+      foundOrders.map(async (foundOrderItem) => {
+        const orderItem = await SaleOrderItem.findOne({
+          salesOrderId: foundOrderItem._id,
+        });
+
+        const orderedProduct = await Product.findOne({
+          _id: orderItem?.productId,
+        });
+        return {
+          saleOrderId: foundOrderItem._id,
+          saleOrderItemId: orderItem?._id,
+          productId: orderedProduct?._id,
+          productName: orderedProduct?.name,
+          quantity: orderItem?.quantity,
+          totalPrice: orderItem?.totalPrice,
+          createdAt: orderItem?.createdAt,
+        };
+      })
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Customer data has been fetched.",
+      data: {
+        id: foundCustomer._id,
+        name: foundCustomer.name,
+        phoneNumber: foundCustomer.phoneNumber,
+        address: {
+          house: foundCustomer.address.house,
+          street: foundCustomer.address.street,
+          city: foundCustomer.address.city,
+          state: foundCustomer.address.state,
+          country: foundCustomer.address.country,
+        },
+        totalOrders: foundOrders.length,
+        salesData: foundOrderItems,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
 
 export {
   createAdmin,
@@ -1105,4 +1186,5 @@ export {
   createCustomer,
   updateCustomer,
   getCustomers,
+  getCustomer,
 };

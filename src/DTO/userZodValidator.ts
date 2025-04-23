@@ -237,6 +237,13 @@ const getCustomersZod = z.object({
     .optional(),
 });
 
+const getCustomerZod = z.object({
+  id: z
+    .string({ message: "Must be a valid id." })
+    .min(24, "Invalid id provided.")
+    .max(24, "Invalid id provided."),
+});
+
 export {
   createAdminZod,
   loginAdminZod,
@@ -249,4 +256,5 @@ export {
   createCustomerZod,
   updateCustomerZod,
   getCustomersZod,
+  getCustomerZod,
 };

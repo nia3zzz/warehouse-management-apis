@@ -16,6 +16,7 @@ import {
   createCustomer,
   updateCustomer,
   getCustomers,
+  getCustomer,
 } from "../controllers/userControllers";
 import upload from "../utils/multerSetup";
 import authHandler from "../middlewares/authHandler";
@@ -62,5 +63,7 @@ router.post("/customer", authHandler, createCustomer);
 router.put("/customer/:id", authHandler, updateCustomer);
 //get a list of customers
 router.get("/customer", authHandler, getCustomers);
+//get data of a customer
+router.get("/customer/:id", authHandler, getCustomer)
 
 export default router;

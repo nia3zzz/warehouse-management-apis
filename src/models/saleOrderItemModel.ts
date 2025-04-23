@@ -5,6 +5,7 @@ interface ISaleOrderItem extends Document {
   productId: mongoose.Schema.Types.ObjectId;
   quantity: number;
   totalPrice: number;
+  createdAt: Date;
 }
 
 const saleOrderItemSchema = new Schema<ISaleOrderItem>(
