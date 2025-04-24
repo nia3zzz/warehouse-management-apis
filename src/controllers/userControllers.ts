@@ -1169,6 +1169,65 @@ const getCustomer = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+const deleteCustomer = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  //req data validation
+  const { id } = req.params;
+
+  const validateData = getCustomerZod.safeParse({
+    id,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.message,
+    });
+  }
+
+  try {
+    //check if the customer exists
+    const foundCustomer = await User.findOne({
+      _id: validateData.data.id,
+      role: "customer",
+    });
+
+    if (!foundCustomer) {
+      return res.status(404).json({
+        status: "error",
+        message: "Customer not found with this id.",
+      });
+    }
+
+    //delete the orders and then the user
+    await SaleOrder.deleteMany({
+      customerId: foundCustomer._id,
+    });
+
+    await User.deleteOne({
+      _id: foundCustomer._id,
+    });
+
+    await logger(
+      req.userId as string,
+      "deleteCustomer",
+      `An admin of id ${req.userId} has deleted a customer of id ${foundCustomer._id}`
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Customer has been deleted.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
 export {
   createAdmin,
   loginAdmin,
@@ -1187,4 +1246,5 @@ export {
   updateCustomer,
   getCustomers,
   getCustomer,
+  deleteCustomer,
 };
