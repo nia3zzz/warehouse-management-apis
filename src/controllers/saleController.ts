@@ -1,6 +1,6 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { customExpressRequest } from "../middlewares/authHandler";
-import { createSaleZod } from "../DTO/saleZodValidator";
+import { createSaleZod, getSalesDataZod } from "../DTO/saleZodValidator";
 import { Product } from "../models/productModel";
 import { SaleOrderItem } from "../models/saleOrderItemModel";
 import { SaleOrder } from "../models/saleOrderModel";
@@ -100,4 +100,77 @@ const createSale = async (
   }
 };
 
-export { createSale };
+const getSales = async (req: Request, res: Response): Promise<any> => {
+  //req querys validation
+  const { limit, offSet, productId, sortByPrice } = req.query;
+
+  const validateData = getSalesDataZod.safeParse({
+    limit,
+    offSet,
+    productId,
+    sortByPrice,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+  try {
+    //to load the product query
+    const productQuery: any = {};
+    if (validateData.data.productId) {
+      productQuery.productId = validateData.data.productId;
+    }
+
+    //to load the sort query
+    const sortQuery: any = {};
+    if (validateData.data.sortByPrice === "true") {
+      sortQuery.price = validateData.data.sortByPrice === "true" ? 1 : -1;
+    }
+
+    //fetch the sales order items data using querys if provided
+    const foundSalesItems = await SaleOrderItem.find(productQuery)
+      .sort(sortQuery)
+      .limit(Number(validateData.data.limit) ?? 10)
+      .skip(Number(validateData.data.offSet) ?? 0);
+
+    //fetch other fields using the sale order items data
+    const salesData = await Promise.all(
+      foundSalesItems.map(async (foundSaleItem) => {
+        const foundOrderDocument = await SaleOrder.findOne({
+          _id: foundSaleItem.salesOrderId,
+        });
+        const foundProduct = await Product.findById(foundSaleItem?.productId);
+        const foundCustomer = await User.findById(
+          foundOrderDocument?.customerId
+        );
+
+        return {
+          orderId: foundOrderDocument?._id,
+          productId: foundProduct?._id,
+          productName: foundProduct?.name,
+          customerId: foundCustomer?._id,
+          customerName: foundCustomer?.name,
+          quantity: foundSaleItem?.quantity,
+          totalPrice: foundSaleItem?.totalPrice,
+          createdAt: foundSaleItem?.createdAt,
+        };
+      })
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fatched sales data.",
+      data: salesData,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+export { createSale, getSales };
