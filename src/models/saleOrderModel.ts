@@ -4,6 +4,7 @@ interface ISaleOrder extends Document {
   customerId: mongoose.Schema.Types.ObjectId;
   status: "Order Placed" | "Order Delivered";
   totalCost: number;
+  createdAt: Date;
 }
 
 const saleOrderSchema = new Schema<ISaleOrder>(

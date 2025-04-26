@@ -6,6 +6,8 @@ import { SaleOrderItem } from "../models/saleOrderItemModel";
 import { SaleOrder } from "../models/saleOrderModel";
 import { User } from "../models/userModel";
 import logger from "../utils/logger";
+import { getCategoryZod } from "../DTO/categoryZodValidator";
+import { Category } from "../models/categoryModel";
 
 //create sale
 
@@ -173,4 +175,103 @@ const getSales = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-export { createSale, getSales };
+const getSale = async (req: Request, res: Response): Promise<any> => {
+  //req param validation
+  const { id } = req.params;
+
+  //using a category module's validator as it suits the need perfectly providing an object id field
+  const validateData = getCategoryZod.safeParse({
+    id,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+  try {
+    //check if order exists
+    const foundOrder = await SaleOrder.findById(validateData.data.id);
+
+    if (!foundOrder) {
+      return res.status(404).json({
+        status: "error",
+        message: "No order found with this id.",
+      });
+    }
+
+    //get sale order item
+    const foundSaleOrderItem = await SaleOrderItem.findOne({
+      salesOrderId: foundOrder._id,
+    });
+
+    if (!foundSaleOrderItem) {
+      return res.status(500).json({
+        status: "error",
+        message: "Something went wrong.",
+      });
+    }
+
+    //get product data
+    const foundProduct = await Product.findOne({
+      _id: foundSaleOrderItem.productId,
+    });
+
+    if (!foundProduct) {
+      return res.status(500).json({
+        status: "error",
+        message: "Something went wrong.",
+      });
+    }
+
+    //get category of product
+    const foundCategory = await Category.findById(foundProduct.categoryId);
+
+    if (!foundCategory) {
+      return res.status(500).json({
+        status: "error",
+        message: "Something went wrong.",
+      });
+    }
+
+    //get the customer
+    const foundCustomer = await User.findById(foundOrder.customerId);
+
+    if (!foundCustomer) {
+      return res.status(500).json({
+        status: "error",
+        message: "Something went wrong.",
+      });
+    }
+
+    //return the repsonse
+    return res.status(200).json({
+      status: "success",
+      message: "Sale data has been fetched.",
+      data: {
+        orderId: foundOrder._id,
+        productId: foundProduct._id,
+        productName: foundProduct.name,
+        categoryId: foundCategory._id,
+        categoryName: foundCategory.name,
+        orderedQuantity: foundSaleOrderItem.quantity,
+        orderedPrice: foundSaleOrderItem.totalPrice,
+        remainingQuantity: foundProduct.quantity,
+        productPrice: foundProduct.price,
+        customerId: foundCustomer._id,
+        customerName: foundCustomer.name,
+        phoneNumber: foundCustomer.phoneNumber,
+        address: foundCustomer.address,
+        createdAt: foundOrder.createdAt,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+export { createSale, getSales, getSale };
