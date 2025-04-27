@@ -37,4 +37,14 @@ const getSalesDataZod = z.object({
     .optional(),
 });
 
-export { createSaleZod, getSalesDataZod };
+const updateSaleZod = z.object({
+  id: z
+    .string({ message: "Must be a valid id." })
+    .min(24, "Invalid id provided.")
+    .max(24, "Invalid id provided."),
+  quantity: z
+    .number({ message: "Invalid quantity." })
+    .min(1, "Invalid quantity."),
+});
+
+export { createSaleZod, getSalesDataZod, updateSaleZod };

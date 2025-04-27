@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import { customExpressRequest } from "../middlewares/authHandler";
-import { createSaleZod, getSalesDataZod } from "../DTO/saleZodValidator";
+import {
+  createSaleZod,
+  getSalesDataZod,
+  updateSaleZod,
+} from "../DTO/saleZodValidator";
 import { Product } from "../models/productModel";
 import { SaleOrderItem } from "../models/saleOrderItemModel";
 import { SaleOrder } from "../models/saleOrderModel";
@@ -274,4 +278,107 @@ const getSale = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-export { createSale, getSales, getSale };
+const updateSale = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  //req param validation
+  const { id } = req.params;
+  const { quantity } = req.body;
+
+  //using a category module's validator as it suits the need perfectly providing an object id field
+  const validateData = updateSaleZod.safeParse({
+    id,
+    quantity,
+  });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    //check if the order exists
+    const foundSaleOrder = await SaleOrder.findById(validateData.data.id);
+
+    if (!foundSaleOrder) {
+      return res.status(404).json({
+        status: "error",
+        message: "Order not found with this id.",
+      });
+    }
+
+    //retrieve sales order item
+    const foundSaleOrderItem = await SaleOrderItem.findOne({
+      salesOrderId: foundSaleOrder._id,
+    });
+
+    if (!foundSaleOrderItem) {
+      return res.status(500).json({
+        status: "error",
+        message: "Something went wrong.",
+      });
+    }
+
+    //retrieve the product object
+    const foundProduct = await Product.findById(foundSaleOrderItem.productId);
+
+    if (!foundProduct) {
+      return res.status(500).json({
+        status: "error",
+        message: "Something went wrong.",
+      });
+    }
+
+    //check if the values are unchanged
+    if (validateData.data.quantity === foundSaleOrderItem.quantity) {
+      return res.status(409).json({
+        status: "error",
+        message: "No changes found to update the order.",
+      });
+    }
+
+    if (validateData.data.quantity > foundProduct.quantity) {
+      return res.status(409).json({
+        status: "error",
+        message: `Only ${foundProduct.quantity} products are left in stock.`,
+      });
+    }
+
+    //update the price and quantity
+    const newPrice = validateData.data.quantity * foundProduct.price;
+
+    await SaleOrderItem.findByIdAndUpdate(foundSaleOrderItem._id, {
+      quantity: validateData.data.quantity,
+      totalPrice: newPrice,
+    });
+
+    // update the product's stock
+    const quantityDifference =
+      foundSaleOrderItem.quantity - validateData.data.quantity;
+
+    await Product.findByIdAndUpdate(foundProduct._id, {
+      quantity: foundProduct.quantity + quantityDifference,
+    });
+
+    await logger(
+      req.userId as string,
+      "updateSale",
+      `An admin of id ${req.userId} has updated an order of id ${foundSaleOrder._id}`
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Order has been updated.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+export { createSale, getSales, getSale, updateSale };
