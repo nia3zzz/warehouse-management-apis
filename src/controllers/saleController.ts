@@ -381,4 +381,86 @@ const updateSale = async (
   }
 };
 
-export { createSale, getSales, getSale, updateSale };
+const deleteSale = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  //req param validation
+  const { id } = req.params;
+
+  const validateData = getCategoryZod.safeParse({ id });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    //check if order exists
+    const foundOrder = await SaleOrder.findById(validateData.data.id);
+
+    if (!foundOrder) {
+      return res.status(404).json({
+        status: "error",
+        message: "Order not found.",
+      });
+    }
+
+    //get the sale order item document
+    const foundSaleOrderItem = await SaleOrderItem.findOne({
+      salesOrderId: foundOrder._id,
+    });
+
+    if (!foundSaleOrderItem) {
+      return res.status(500).json({
+        status: "error",
+        message: "Something went wrong.",
+      });
+    }
+
+    //update the product stock if not delivered
+    if (foundOrder.status !== "Order Delivered") {
+      await Product.findByIdAndUpdate(foundSaleOrderItem.productId, {
+        $inc: { quantity: foundSaleOrderItem.quantity },
+      });
+
+      await SaleOrder.findByIdAndDelete(foundOrder._id);
+      await SaleOrderItem.findByIdAndDelete(foundSaleOrderItem._id);
+
+      await logger(
+        req.userId as string,
+        "deleteSale",
+        `An admin of id ${req.userId} has deleted an order of id ${foundOrder._id}`
+      );
+
+      return res.status(200).json({
+        status: "success",
+        mesage: "Order has been deleted.",
+      });
+    }
+    //if already deleved just delete the orders
+
+    await SaleOrder.findByIdAndDelete(foundOrder._id);
+    await SaleOrderItem.findByIdAndDelete(foundSaleOrderItem._id);
+
+    await logger(
+      req.userId as string,
+      "deleteSale",
+      `An admin of id ${req.userId} has deleted an order of id ${foundOrder._id}`
+    );
+
+    return res.status(200).json({
+      status: "success",
+      mesage: "Order has been deleted.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+export { createSale, getSales, getSale, updateSale, deleteSale };
