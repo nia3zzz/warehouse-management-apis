@@ -3,6 +3,7 @@ import { customExpressRequest } from "../middlewares/authHandler";
 import {
   createSaleZod,
   getSalesDataZod,
+  updateSaleOrderStatusZod,
   updateSaleZod,
 } from "../DTO/saleZodValidator";
 import { Product } from "../models/productModel";
@@ -261,6 +262,7 @@ const getSale = async (req: Request, res: Response): Promise<any> => {
         categoryName: foundCategory.name,
         orderedQuantity: foundSaleOrderItem.quantity,
         orderedPrice: foundSaleOrderItem.totalPrice,
+        orderStatus: foundOrder.status,
         remainingQuantity: foundProduct.quantity,
         productPrice: foundProduct.price,
         customerId: foundCustomer._id,
@@ -463,4 +465,67 @@ const deleteSale = async (
   }
 };
 
-export { createSale, getSales, getSale, updateSale, deleteSale };
+const updateSaleOrderStatus = async (
+  req: customExpressRequest,
+  res: Response
+): Promise<any> => {
+  //req param validation
+  const { id } = req.params;
+
+  const validateData = updateSaleOrderStatusZod.safeParse({ id });
+
+  if (!validateData.success) {
+    return res.status(400).json({
+      status: "error",
+      message: validateData.error.errors[0].message,
+    });
+  }
+
+  try {
+    //check if the order exists
+    const foundSaleOrder = await SaleOrder.findById(validateData.data.id);
+
+    if (!foundSaleOrder) {
+      return res.status(404).json({
+        status: "error",
+        message: "Order not found.",
+      });
+    }
+
+    //update according to pre set values if none set delivered
+    if (foundSaleOrder.status === "Order Placed") {
+      await SaleOrder.findByIdAndUpdate(foundSaleOrder._id, {
+        status: "Order Delivered",
+      });
+
+      return res.status(200).json({
+        status: "success",
+        message: "Order has been updated.",
+      });
+    }
+
+    //if set delivered set as order placed
+    await SaleOrder.findByIdAndUpdate(foundSaleOrder._id, {
+      status: "Order Placed",
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Order has been updated.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error.",
+    });
+  }
+};
+
+export {
+  createSale,
+  getSales,
+  getSale,
+  updateSale,
+  deleteSale,
+  updateSaleOrderStatus,
+};

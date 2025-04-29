@@ -6,6 +6,7 @@ import {
   getSale,
   getSales,
   updateSale,
+  updateSaleOrderStatus,
 } from "../controllers/saleController";
 
 const router: Router = express.Router();
@@ -22,5 +23,7 @@ router.get("/:id", authHandler, getSale);
 router.put("/:id", authHandler, updateSale);
 //delete a sale
 router.delete("/:id", authHandler, deleteSale);
+//update status of an order
+router.put("/status/:id", authHandler, updateSaleOrderStatus);
 
 export default router;
