@@ -62,6 +62,13 @@ npm run dev  # For development with nodemon
 npm start     # For production
 ```
 
+### Running the Server Using Docker
+
+```bash
+docker build -t warehouse-management-apis:latest . #Build the image first
+docker run -p 8080:8080 warehouse-management-apis #This will create a container and run it
+```
+
 ## 🛠️ Technologies Used
 
 - Node.js
